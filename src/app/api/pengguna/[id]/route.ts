@@ -6,6 +6,8 @@ import { authOptions } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
+import { applyRateLimiter } from '@/lib/rate-limiter';
+import { sanitizeObject } from '@/lib/sanitizer';
 
 const prisma = new PrismaClient();
 
@@ -33,6 +35,11 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { id } = params;
   const authCheck = await checkRole(req, ['ADMINISTRATOR']);
   if (!authCheck.authorized) {
@@ -43,7 +50,8 @@ export async function PUT(
   try {
     const body = await req.json();
     const validatedData = updateUserSchema.parse(body);
-    let { password, ...dataToUpdate } = validatedData;
+    const sanitizedData = sanitizeObject(validatedData);
+    let { password, ...dataToUpdate } = sanitizedData;
 
     // Hash new password if provided
     if (password && password.length > 0) {
@@ -83,6 +91,11 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { id } = params;
   const authCheck = await checkRole(req, ['ADMINISTRATOR']);
   if (!authCheck.authorized) {

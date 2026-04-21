@@ -1,10 +1,17 @@
 // src/app/api/publik/penerima/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, StatusVerifikasi } from '@prisma/client';
+import { decrypt } from '@/lib/crypto'; // Import decrypt function
+import { applyRateLimiter } from '@/lib/rate-limiter';
 
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '10');
@@ -33,29 +40,46 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         nama_lengkap: true,
-        nik: true, // Will be masked on client-side
+        nik: true, // Encrypted, will be decrypted then masked
         alamat: true, // To infer kecamatan
         penyaluran: {
           where: { status_penyaluran: 'BERHASIL' },
           select: { jenis_bantuan: true },
-          distinct: ['jenis_bantuan'], // Get unique programs
+          distinct: ['jenis_bantuan'],
         },
+        fotos: { // Include fotos to decrypt url_foto
+          select: {
+            id: true,
+            url_foto: true, // Encrypted, will be decrypted
+            nama_file: true,
+          }
+        }
       },
       orderBy: { nama_lengkap: 'asc' },
     });
 
     const total = await prisma.tbl_penerima.count({ where });
 
-    // Mask NIK on server-side before sending to client
-    const maskedPenerima = publicPenerima.map(penerima => ({
-      ...penerima,
-      nik: `${penerima.nik.substring(0, 6)}****${penerima.nik.substring(10, 14)}`, // Example masking: 327401****0001
-      // Assuming 'kecamatan' can be extracted from 'alamat' for display
-      kecamatan: penerima.alamat ? penerima.alamat.split(',')[0].trim() : 'N/A', // Simplified extraction
-      programs: penerima.penyaluran.map(s => s.jenis_bantuan).join(', '),
-    }));
+    // Decrypt and mask NIK, decrypt photo URLs
+    const processedPenerima = publicPenerima.map(penerima => {
+      const decryptedNik = decrypt(penerima.nik);
+      const maskedNik = `${decryptedNik.substring(0, 6)}****${decryptedNik.substring(10, 14)}`; // Example masking
+      
+      const decryptedFotos = penerima.fotos.map(foto => ({
+        ...foto,
+        url_foto: decrypt(foto.url_foto),
+      }));
 
-    return NextResponse.json({ data: maskedPenerima, total }, { status: 200 });
+      return {
+        ...penerima,
+        nik: maskedNik,
+        kecamatan: penerima.alamat ? penerima.alamat.split(',')[0].trim() : 'N/A',
+        programs: penerima.penyaluran.map(s => s.jenis_bantuan).join(', '),
+        fotos: decryptedFotos,
+      };
+    });
+
+    return NextResponse.json({ data: processedPenerima, total }, { status: 200 });
   } catch (error) {
     console.error('Error fetching public penerima data:', error);
     return NextResponse.json({ message: 'Gagal mengambil data publik.' }, { status: 500 });

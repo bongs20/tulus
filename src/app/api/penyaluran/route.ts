@@ -5,6 +5,7 @@ import { writeAuditLog } from '@/lib/audit';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Pusher from 'pusher';
+import { applyRateLimiter } from '@/lib/rate-limiter';
 
 const prisma = new PrismaClient();
 
@@ -29,6 +30,11 @@ async function checkRole(req: NextRequest, allowedRoles: string[]) {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const authCheck = await checkRole(req, ['ADMINISTRATOR', 'KEPALA_BIDANG', 'PETUGAS_VERIFIKATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });
@@ -122,6 +128,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const authCheck = await checkRole(req, ['ADMINISTRATOR', 'KEPALA_BIDANG', 'PETUGAS_VERIFIKATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });

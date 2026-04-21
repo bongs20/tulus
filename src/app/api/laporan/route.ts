@@ -7,6 +7,7 @@ import ExcelJS from 'exceljs';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale'; // For Indonesian locale
+import { applyRateLimiter } from '@/lib/rate-limiter';
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,11 @@ async function checkRole(req: NextRequest, allowedRoles: string[]) {
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const authCheck = await checkRole(req, ['ADMINISTRATOR', 'KEPALA_BIDANG']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });

@@ -1,6 +1,6 @@
 // src/hooks/usePenerima.ts
 import useSWR from 'swr';
-import { tbl_penerima } from '@prisma/client';
+import { tbl_penerima, tbl_foto } from '@prisma/client';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -11,8 +11,18 @@ interface UsePenerimaOptions {
   limit?: number;
 }
 
+// Define a type that reflects the decrypted fields as strings
+interface DecryptedFoto extends Omit<tbl_foto, 'url_foto'> {
+  url_foto: string;
+}
+
+interface DecryptedPenerima extends Omit<tbl_penerima, 'nik'> {
+  nik: string;
+  fotos: DecryptedFoto[]; // Assuming fotos are always included and decrypted
+}
+
 interface UsePenerimaResult {
-  data: tbl_penerima[];
+  data: DecryptedPenerima[];
   total: number;
   isLoading: boolean;
   isError: any;
@@ -30,7 +40,7 @@ export function usePenerima(options?: UsePenerimaOptions): UsePenerimaResult {
 
   const url = `/api/penerima?${queryParams.toString()}`;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher);
+  const { data, error, isLoading, mutate } = useSWR<{ data: DecryptedPenerima[]; total: number }>(url, fetcher);
 
   return {
     data: data?.data || [],

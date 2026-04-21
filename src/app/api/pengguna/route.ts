@@ -6,6 +6,8 @@ import { authOptions } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
+import { applyRateLimiter } from '@/lib/rate-limiter';
+import { sanitizeObject } from '@/lib/sanitizer';
 
 const prisma = new PrismaClient();
 
@@ -29,6 +31,11 @@ const createUserSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const authCheck = await checkRole(req, ['ADMINISTRATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });
@@ -77,6 +84,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const authCheck = await checkRole(req, ['ADMINISTRATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });
@@ -86,8 +98,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const validatedData = createUserSchema.parse(body);
+    const sanitizedData = sanitizeObject(validatedData);
 
-    const { username, password, nama_lengkap, role } = validatedData;
+    const { username, password, nama_lengkap, role } = sanitizedData;
 
     // Check if username already exists
     const existingUser = await prisma.tbl_pengguna.findUnique({

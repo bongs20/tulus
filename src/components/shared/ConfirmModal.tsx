@@ -1,6 +1,7 @@
 // src/components/shared/ConfirmModal.tsx
 'use client';
 
+import { Trash } from '@phosphor-icons/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,7 @@ interface ConfirmModalProps {
   description: string;
   confirmText?: string;
   cancelText?: string;
+  icon?: React.ElementType;
 }
 
 export function ConfirmModal({
@@ -29,6 +31,7 @@ export function ConfirmModal({
   description,
   confirmText = "Continue",
   cancelText = "Cancel",
+  icon: Icon = Trash,
 }: ConfirmModalProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -44,7 +47,9 @@ export function ConfirmModal({
       </div>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Icon className="h-5 w-5 text-destructive" /> {title}
+          </AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

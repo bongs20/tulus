@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import { applyRateLimiter } from '@/lib/rate-limiter';
+import { sanitizeObject } from '@/lib/sanitizer';
 
 const prisma = new PrismaClient();
 
@@ -12,13 +14,19 @@ const sanggahanSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body = await req.json();
     const validatedData = sanggahanSchema.parse(body);
+    const sanitizedData = sanitizeObject(validatedData);
 
     // Verify if id_penerima exists and is DISETUJUI
     const penerima = await prisma.tbl_penerima.findUnique({
-      where: { id: validatedData.id_penerima },
+      where: { id: sanitizedData.id_penerima },
       select: { id: true, status_verifikasi: true },
     });
 
@@ -28,9 +36,9 @@ export async function POST(req: NextRequest) {
 
     const newSanggahan = await prisma.tbl_sanggahan.create({
       data: {
-        id_penerima: validatedData.id_penerima,
-        nama_pengaju: validatedData.nama_pengaju,
-        isi_sanggahan: validatedData.isi_sanggahan,
+        id_penerima: sanitizedData.id_penerima,
+        nama_pengaju: sanitizedData.nama_pengaju,
+        isi_sanggahan: sanitizedData.isi_sanggahan,
         tanggal_sanggahan: new Date(),
         status_sanggahan: 'PENDING',
       },

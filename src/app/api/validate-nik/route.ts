@@ -1,10 +1,17 @@
 // src/app/api/validate-nik/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { encrypt } from '@/lib/crypto';
+import { applyRateLimiter } from '@/lib/rate-limiter';
 
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
+  const rateLimitResponse = applyRateLimiter(req as any); // Cast to any to avoid NextRequest/NextResponse type conflict
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { searchParams } = new URL(req.url);
   const nik = searchParams.get('nik');
 
@@ -13,9 +20,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const encryptedNik = encrypt(nik); // Encrypt NIK before lookup
     // Check if NIK already exists in tbl_penerima
     const existingPenerima = await prisma.tbl_penerima.findUnique({
-      where: { nik: nik },
+      where: { nik: encryptedNik },
     });
 
     if (existingPenerima) {

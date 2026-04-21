@@ -38,7 +38,7 @@ enum StatusAkun {
 // Recipient model
 model tbl_penerima {
   id                       String        @id @default(uuid())
-  nik                      String        @unique // 16 char NIK
+  nik                      Bytes         @unique // 16 char NIK
   nama_lengkap             String
   tanggal_lahir            DateTime
   jenis_kelamin            JenisKelamin
@@ -74,7 +74,7 @@ enum StatusVerifikasi {
 model tbl_foto {
   id          String    @id @default(uuid())
   id_penerima String
-  url_foto    String
+  url_foto    Bytes
   nama_file   String
   created_at  DateTime  @default(now())
 
@@ -85,7 +85,7 @@ model tbl_foto {
 model tbl_desil {
   id                   String            @id @default(uuid())
   id_penerima          String
-  nik                  String
+  nik                  Bytes
   nilai_desil          Int               @map("nilai_desil") // 1-10
   sumber_data          String
   status_sinkronisasi  StatusSinkronisasi @default(TERTUNDA)

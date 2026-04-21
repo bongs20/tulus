@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth'; // For role check
 import { authOptions } from '@/lib/auth'; // Assuming authOptions will be defined here or imported
 import { writeAuditLog } from '@/lib/audit';
 import { sendSms } from '@/lib/sms';
+import { applyRateLimiter } from '@/lib/rate-limiter';
+import { sanitize } from '@/lib/sanitizer';
 
 const prisma = new PrismaClient();
 
@@ -26,8 +28,14 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const rateLimitResponse = applyRateLimiter(req as any);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const { id } = params;
   const { status, catatan } = await req.json();
+  const sanitizedCatatan = sanitize(catatan);
 
   // Role check (PETUGAS_VERIFIKATOR only)
   const authCheck = await checkRole(req, ['ADMINISTRATOR', 'PETUGAS_VERIFIKATOR']); // Admin can also verify
@@ -59,11 +67,11 @@ export async function PUT(
       userId: userId!,
       action: 'VERIFIKASI',
       description: `Verifikasi penerima ${updatedPenerima.nama_lengkap} (ID: ${updatedPenerima.id})`,
-      note: `Status diubah menjadi ${status}. Catatan: ${catatan || 'Tidak ada catatan.'}`,
+      note: `Status diubah menjadi ${status}. Catatan: ${sanitizedCatatan || 'Tidak ada catatan.'}`,
     });
 
     // Send SMS notification
-    const smsMessage = `Permohonan bantuan Anda untuk ${updatedPenerima.nama_lengkap} telah ${status.toLowerCase()}. Catatan: ${catatan || 'Tidak ada.'}`;
+    const smsMessage = `Permohonan bantuan Anda untuk ${updatedPenerima.nama_lengkap} telah ${status.toLowerCase()}. Catatan: ${sanitizedCatatan || 'Tidak ada.'}`;
     // Ensure nomor_telepon is not '0' or empty before sending
     if (updatedPenerima.nomor_telepon && updatedPenerima.nomor_telepon !== '0') {
       await sendSms(updatedPenerima.nomor_telepon, smsMessage);
