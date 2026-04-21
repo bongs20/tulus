@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TULUS (Teknologi Usulan Layanan Sosial)
+
+TULUS is a comprehensive web-based social welfare management system designed for Indonesian local government agencies (Dinas Sosial). It streamlines the process of registering, verifying, and distributing social aid to eligible citizens, while providing transparency and accountability through a public portal.
+
+## Tech Stack
+
+-   **Frontend:** Next.js 14 (App Router) + TypeScript
+-   **Styling:** Tailwind CSS + shadcn/ui
+-   **Database:** PostgreSQL (with SQLite for local development) + Prisma ORM
+-   **Auth:** NextAuth.js (credentials provider)
+-   **Realtime:** Pusher (WebSocket for live status updates)
+-   **SMS:** Twilio API
+-   **File Upload:** Uploadthing
+-   **PDF Export:** @react-pdf/renderer
+-   **Excel Export:** exceljs
+-   **State Management:** Zustand
+-   **Form Validation:** React Hook Form + Zod
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+-   Node.js (v18 or later)
+-   npm or yarn
+-   PostgreSQL (optional, for production)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/tulus.git
+    cd tulus
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
-## Learn More
+3.  **Set up environment variables:**
+    -   Copy the `.env.example` file to `.env`:
+        ```bash
+        cp .env.example .env
+        ```
+    -   Fill in the required values in the `.env` file. For local development with SQLite, you can leave `DATABASE_URL` as is. For production with PostgreSQL, update `DATABASE_URL` with your connection string.
+    -   Generate a `NEXTAUTH_SECRET` using:
+        ```bash
+        openssl rand -base64 32
+        ```
+    -   Update the other service keys (Twilio, Pusher, Uploadthing) with your credentials.
 
-To learn more about Next.js, take a look at the following resources:
+4.  **Run database migrations and seeding:**
+    -   This will set up your database schema (SQLite by default) and populate it with initial data.
+    ```bash
+    npx prisma migrate dev --name init
+    npx prisma db seed
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5.  **Run the development server:**
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Seed Data & Login Credentials
 
-## Deploy on Vercel
+The database is seeded with the following user accounts:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+-   **Administrator:**
+    -   Username: `admin`
+    -   Password: `Admin@12345`
+-   **Kepala Bidang:**
+    -   Username: `kepala`
+    -   Password: `Kepala@12345`
+-   **Petugas Verifikator:**
+    -   Username: `verifikator1`
+    -   Password: `Verifikator@123`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Features
+
+-   **Role-Based Access Control:** Differentiated dashboards and permissions for Administrators, Field Officers, and Managers.
+-   **Multi-Step Data Entry:** An intuitive wizard for inputting new recipient data, including identity, economic status, and photo uploads.
+-   **Automated DTKS Sync:** Mock DTKS synchronization on data entry to pre-validate recipients.
+-   **Verification & Disbursement Workflow:** A seamless process from verification queue to aid distribution, with real-time status updates via UI and SMS notifications.
+-   **Analytics & Reporting:** An advanced dashboard for managers with real-time charts and KPIs, plus exportable PDF and Excel reports.
+-   **Public Transparency Portal:** A public-facing page for citizens to view a list of approved aid recipients, promoting trust and accountability.
+-   **User Management:** An interface for administrators to manage user accounts.
+-   **Security:** Includes encryption for sensitive data, API rate limiting, XSS protection, and comprehensive audit logging.
