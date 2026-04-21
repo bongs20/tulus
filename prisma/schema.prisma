@@ -1,0 +1,165 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User model
+model tbl_pengguna {
+  id              String    @id @default(uuid())
+  username        String    @unique
+  password_hash   String
+  nama_lengkap    String
+  role            Role      @default(PETUGAS_VERIFIKATOR) // Default role as specified in requirements for PETUGAS_VERIFIKATOR below
+  status_akun     StatusAkun @default(AKTIF)
+  login_attempts  Int       @default(0)
+  locked_until    DateTime?
+  created_at      DateTime  @default(now())
+
+  audit_logs      tbl_audit_log[]
+}
+
+enum Role {
+  ADMINISTRATOR
+  KEPALA_BIDANG
+  PETUGAS_VERIFIKATOR
+}
+
+enum StatusAkun {
+  AKTIF
+  NONAKTIF
+  TERKUNCI
+}
+
+// Recipient model
+model tbl_penerima {
+  id                       String        @id @default(uuid())
+  nik                      String        @unique // 16 char NIK
+  nama_lengkap             String
+  tanggal_lahir            DateTime
+  jenis_kelamin            JenisKelamin
+  alamat                   String
+  nomor_telepon            String
+  jumlah_anggota_keluarga  Int
+  jenis_pekerjaan          String
+  status_kepemilikan_rumah String
+  keterangan_ekonomi       String
+  status_verifikasi        StatusVerifikasi @default(MENUNGGU)
+  created_at               DateTime      @default(now())
+
+  fotos                    tbl_foto[]
+  desil_data               tbl_desil[]
+  penyaluran               tbl_penyaluran[]
+  sanggahan                tbl_sanggahan[]
+}
+
+enum JenisKelamin {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+enum StatusVerifikasi {
+  MENUNGGU
+  MATCH
+  MISMATCH
+  DISETUJUI
+  DITOLAK
+}
+
+// Photo model
+model tbl_foto {
+  id          String    @id @default(uuid())
+  id_penerima String
+  url_foto    String
+  nama_file   String
+  created_at  DateTime  @default(now())
+
+  penerima    tbl_penerima @relation(fields: [id_penerima], references: [id])
+}
+
+// Desil model
+model tbl_desil {
+  id                   String            @id @default(uuid())
+  id_penerima          String
+  nik                  String
+  nilai_desil          Int               @map("nilai_desil") // 1-10
+  sumber_data          String
+  status_sinkronisasi  StatusSinkronisasi @default(TERTUNDA)
+  tanggal_sinkronisasi DateTime
+
+  penerima             tbl_penerima      @relation(fields: [id_penerima], references: [id])
+}
+
+enum StatusSinkronisasi {
+  MATCH
+  MISMATCH
+  TERTUNDA
+}
+
+// Distribution model
+model tbl_penyaluran {
+  id                   String             @id @default(uuid())
+  id_penerima          String
+  jenis_bantuan        JenisBantuan
+  metode_penyaluran    MetodePenyaluran
+  nominal_bantuan      Decimal
+  status_penyaluran    StatusPenyaluran   @default(MENUNGGU)
+  catatan              String?
+  created_at           DateTime           @default(now())
+  tanggal_penyaluran   DateTime
+
+  penerima             tbl_penerima       @relation(fields: [id_penerima], references: [id])
+}
+
+enum JenisBantuan {
+  PKH
+  BPNT
+  BLT
+}
+
+enum MetodePenyaluran {
+  BANK
+  EWALLET
+  FISIK
+}
+
+enum StatusPenyaluran {
+  MENUNGGU
+  DIPROSES
+  BERHASIL
+  GAGAL
+}
+
+// Audit Log model
+model tbl_audit_log {
+  id        String    @id @default(uuid())
+  id_pengguna String
+  aksi      String
+  deskripsi String
+  note      String?
+  waktu_aksi DateTime  @default(now())
+
+  pengguna  tbl_pengguna @relation(fields: [id_pengguna], references: [id])
+}
+
+// Complaint model
+model tbl_sanggahan {
+  id               String          @id @default(uuid())
+  id_penerima      String
+  nama_pengaju     String
+  isi_sanggahan    String
+  tanggal_sanggahan DateTime       @default(now())
+  status_sanggahan StatusSanggahan @default(PENDING)
+
+  penerima         tbl_penerima    @relation(fields: [id_penerima], references: [id])
+}
+
+enum StatusSanggahan {
+  PENDING
+  DITINJAU
+  SELESAI
+}
