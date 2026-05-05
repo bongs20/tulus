@@ -15,6 +15,7 @@ interface SidebarLink {
 
 const sidebarLinks: SidebarLink[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['ADMINISTRATOR', 'KEPALA_BIDANG', 'PETUGAS_VERIFIKATOR'] },
+  { href: '/warga', label: 'Data Warga (Registry)', icon: 'group', roles: ['ADMINISTRATOR', 'KEPALA_BIDANG'] },
   { href: '/antrian', label: 'Antrian Verifikasi', icon: 'fact_check', roles: ['ADMINISTRATOR', 'PETUGAS_VERIFIKATOR'] },
   { href: '/penyaluran', label: 'Penyaluran Bantuan', icon: 'volunteer_activism', roles: ['ADMINISTRATOR', 'KEPALA_BIDANG', 'PETUGAS_VERIFIKATOR'] },
   { href: '/sanggahan', label: 'Sanggahan', icon: 'chat_bubble', roles: ['ADMINISTRATOR', 'KEPALA_BIDANG', 'PETUGAS_VERIFIKATOR'] },
