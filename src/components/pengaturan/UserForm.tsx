@@ -15,7 +15,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { tbl_pengguna, Role, StatusAkun } from '@prisma/client';
+import { Role, StatusAkun } from '@prisma/client';
+import type { tbl_pengguna } from '@prisma/client';
 import { toast } from 'sonner';
 
 const userFormSchema = z.object({
@@ -28,8 +29,10 @@ const userFormSchema = z.object({
 
 type UserFormValues = z.infer<typeof userFormSchema>;
 
+export type UserFormData = Pick<tbl_pengguna, 'id' | 'username' | 'nama_lengkap' | 'role' | 'status_akun'>;
+
 interface UserFormProps {
-  initialData?: tbl_pengguna; // Optional, for edit mode
+  initialData?: UserFormData; // Optional, for edit mode
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -166,7 +169,7 @@ export function UserForm({ initialData, onSuccess, onCancel }: UserFormProps) {
             <FormItem>
               <FormLabel>Password {initialData ? '(Kosongkan jika tidak ingin mengubah)' : ''}</FormLabel>
               <FormControl>
-                <Input type="password" placeholder={initialData ? '••••••••' : 'Password minimal 8 karakter'} {...field} disabled={isLoading} />
+                <Input type="password" placeholder={initialData ? '********' : 'Password minimal 8 karakter'} {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -80,7 +80,6 @@ The database is seeded with the following user accounts:
 -   **Petugas Verifikator:**
     -   Username: `verifikator1`
     -   Password: `Verifikator@123`
-
 ## Features
 
 -   **Role-Based Access Control:** Differentiated dashboards and permissions for Administrators, Field Officers, and Managers.

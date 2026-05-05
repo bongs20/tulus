@@ -4,7 +4,8 @@ import { PrismaClient, StatusVerifikasi } from '@prisma/client';
 import { getServerSession } from 'next-auth'; // For role check
 import { authOptions } from '@/lib/auth'; // Assuming authOptions will be defined here or imported
 import { writeAuditLog } from '@/lib/audit';
-import { sendSms } from '@/lib/sms';
+import { sendWhatsappNotification } from '@/lib/fonnte';
+import { sendTelegramNotification } from '@/lib/telegram';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 import { sanitize } from '@/lib/sanitizer';
 import { triggerPusherEvent } from '@/lib/pusher-server';
@@ -91,14 +92,15 @@ export async function PUT(
       note: `Status diubah menjadi ${status}. Catatan: ${sanitizedCatatan || 'Tidak ada catatan.'}`,
     });
 
-    // Send SMS notification
-    const smsMessage = `Permohonan bantuan Anda untuk ${updatedPenerima.nama_lengkap} telah ${status.toLowerCase()}. Catatan: ${sanitizedCatatan || 'Tidak ada.'}`;
+    // Send Notifications
+    const msg = `Permohonan bantuan Anda untuk ${updatedPenerima.nama_lengkap} telah ${status.toLowerCase()}. Catatan: ${sanitizedCatatan || 'Tidak ada.'}`;
     // Ensure nomor_telepon is not '0' or empty before sending
     if (updatedPenerima.nomor_telepon && updatedPenerima.nomor_telepon !== '0') {
-      await sendSms(updatedPenerima.nomor_telepon, smsMessage);
-    } else {
-      console.warn(`SMS not sent for ${updatedPenerima.nama_lengkap} due to invalid phone number: ${updatedPenerima.nomor_telepon}`);
+      await sendWhatsappNotification(updatedPenerima.nomor_telepon, msg);
     }
+    
+    // Kirim monitoring ke admin
+    await sendTelegramNotification(`📝 *HASIL VERIFIKASI*\nNama: ${updatedPenerima.nama_lengkap}\nStatus: ${status}\nCatatan: ${sanitizedCatatan}`);
 
 
     await triggerPusherEvent('dashboard-channel', 'verifikasi-update', {

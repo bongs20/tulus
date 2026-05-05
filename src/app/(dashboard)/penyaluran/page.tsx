@@ -14,12 +14,14 @@ import { usePenerima } from '@/hooks/usePenerima';
 import { tbl_penyaluran, JenisBantuan, MetodePenyaluran, StatusPenyaluran } from '@prisma/client';
 import { toast } from 'sonner';
 import { getPusherClient } from '@/lib/pusher-client';
+import { UploadButton } from '@/lib/uploadthing';
 
 const programSchema = z.object({
   jenis_bantuan: z.nativeEnum(JenisBantuan),
   nominal_bantuan: z.coerce.number().positive({ message: 'Nominal bantuan harus angka positif.' }),
   metode_penyaluran: z.nativeEnum(MetodePenyaluran),
   catatan: z.string().optional(),
+  bukti_penyaluran: z.string().optional(),
 });
 
 type ProgramFormValues = z.infer<typeof programSchema>;
@@ -36,12 +38,12 @@ export default function PenyaluranPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { data: disetujuiPenerima, isLoading: isLoadingPenerima, mutate: mutatePenerima } = usePenerima({
-    status: 'DISETUJUI', search: debouncedSearchTerm, page: currentPage, limit,
+    status: 'DISETUJUI', search: debouncedSearchTerm, page: currentPage, limit, excludeDisalurkan: true,
   });
 
   const form = useForm<z.input<typeof programSchema>, unknown, ProgramFormValues>({
     resolver: zodResolver(programSchema),
-    defaultValues: { jenis_bantuan: JenisBantuan.PKH, nominal_bantuan: 0, metode_penyaluran: MetodePenyaluran.BANK, catatan: '' },
+    defaultValues: { jenis_bantuan: JenisBantuan.PKH, nominal_bantuan: 0, metode_penyaluran: MetodePenyaluran.BANK, catatan: '', bukti_penyaluran: '' },
   });
 
   useEffect(() => {
@@ -125,10 +127,60 @@ export default function PenyaluranPage() {
 
       <div className="rounded-xl border border-[#d7e3f7] bg-white p-4">
         <Form {...form}>
-          <form className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          <form className="grid grid-cols-1 gap-3 md:grid-cols-5">
             <FormField control={form.control} name="jenis_bantuan" render={({ field }) => (<FormItem><FormLabel>Program</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value={JenisBantuan.PKH}>PKH</SelectItem><SelectItem value={JenisBantuan.BPNT}>BPNT</SelectItem><SelectItem value={JenisBantuan.BLT}>BLT</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="nominal_bantuan" render={({ field }) => (<FormItem><FormLabel>Nominal</FormLabel><FormControl><Input type="number" {...field} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="metode_penyaluran" render={({ field }) => (<FormItem><FormLabel>Metode</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value={MetodePenyaluran.BANK}>BANK</SelectItem><SelectItem value={MetodePenyaluran.EWALLET}>E-WALLET</SelectItem><SelectItem value={MetodePenyaluran.FISIK}>FISIK</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+            <FormField
+              control={form.control}
+              name="bukti_penyaluran"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bukti (Foto/Nota)</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-col gap-2">
+                      {field.value ? (
+                        <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                          <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                          <span>File berhasil diunggah</span>
+                          <button
+                            type="button"
+                            onClick={() => field.onChange('')}
+                            className="ml-auto font-bold uppercase hover:underline"
+                          >
+                            Ganti
+                          </button>
+                        </div>
+                      ) : (
+                        <UploadButton
+                          endpoint="imageUploader"
+                          onClientUploadComplete={(res) => {
+                            if (res && res[0]) {
+                              field.onChange(res[0].url);
+                              toast.success('Bukti berhasil diunggah!');
+                            }
+                          }}
+                          onUploadError={(error: Error) => {
+                            toast.error(`Gagal mengunggah: ${error.message}`);
+                          }}
+                          appearance={{
+                            button: 'bg-blue-600 hover:bg-blue-700 text-xs h-9 px-4 w-full',
+                            allowedContent: 'hidden',
+                          }}
+                          content={{
+                            button({ ready }) {
+                              if (ready) return 'Upload Bukti';
+                              return 'Loading...';
+                            },
+                          }}
+                        />
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField control={form.control} name="catatan" render={({ field }) => (<FormItem><FormLabel>Catatan</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
           </form>
         </Form>
@@ -180,6 +232,54 @@ export default function PenyaluranPage() {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="rounded-xl border border-[#d7e3f7] bg-white">
+        <div className="border-b border-[#d7e3f7] bg-slate-50 p-4">
+          <h3 className="font-semibold text-[#191b23]">Riwayat Penyaluran Terbaru</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-[#d7e3f7] bg-[#faf8ff]">
+                <th className="px-6 py-3 text-xs text-slate-600">PENERIMA</th>
+                <th className="px-6 py-3 text-xs text-slate-600">PROGRAM</th>
+                <th className="px-6 py-3 text-xs text-slate-600">NOMINAL</th>
+                <th className="px-6 py-3 text-xs text-slate-600">STATUS</th>
+                <th className="px-6 py-3 text-xs text-slate-600">BUKTI</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#d7e3f7]">
+              {penyaluranData.length === 0 ? (
+                <tr><td colSpan={5} className="px-6 py-6 text-sm text-slate-500 text-center">Belum ada riwayat penyaluran.</td></tr>
+              ) : (
+                penyaluranData.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/60">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{item.penerima.nama_lengkap}</span>
+                        <span className="text-xs text-slate-500">{item.penerima.nik}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-semibold">{item.jenis_bantuan}</td>
+                    <td className="px-6 py-4 text-sm">Rp {Number(item.nominal_bantuan).toLocaleString('id-ID')}</td>
+                    <td className="px-6 py-4"><StatusBadge status={item.status_penyaluran} /></td>
+                    <td className="px-6 py-4 text-xs">
+                      {item.bukti_penyaluran ? (
+                        <a href={item.bukti_penyaluran} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline font-medium">
+                          <span className="material-symbols-outlined text-[16px]">image</span>
+                          Lihat Bukti
+                        </a>
+                      ) : (
+                        <span className="text-slate-400 italic">Tanpa bukti</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
   );

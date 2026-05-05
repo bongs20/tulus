@@ -1,6 +1,5 @@
 // src/hooks/useVerifikasi.ts
 import { useState } from 'react';
-import { StatusVerifikasi } from '@prisma/client';
 import { toast } from 'sonner';
 
 interface VerifyRecipientPayload {
@@ -40,7 +39,7 @@ export function useVerifikasi(): UseVerifikasiResult {
         toast.error(errorMessage);
         return false;
       }
-    } catch (err: any) {
+    } catch {
       const errorMessage = 'Terjadi kesalahan jaringan atau server saat memverifikasi.';
       setError(errorMessage);
       toast.error(errorMessage);

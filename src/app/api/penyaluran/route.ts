@@ -1,13 +1,14 @@
-// src/app/api/penyaluran/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma, PrismaClient, JenisBantuan, MetodePenyaluran, StatusPenyaluran, StatusVerifikasi } from '@prisma/client';
+export const dynamic = 'force-dynamic';
+import { Prisma, JenisBantuan, MetodePenyaluran, StatusPenyaluran, StatusVerifikasi } from '@prisma/client';
 import { writeAuditLog } from '@/lib/audit';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 import { triggerPusherEvent } from '@/lib/pusher-server';
+import { decrypt } from '@/lib/crypto';
 
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 async function checkRole(req: NextRequest, allowedRoles: string[]) {
   const session = await getServerSession(authOptions);
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   const userId = authCheck.user?.id;
 
   try {
-    const { id_penerima, jenis_bantuan, metode_penyaluran, nominal_bantuan, catatan } = await req.json();
+    const { id_penerima, jenis_bantuan, metode_penyaluran, nominal_bantuan, catatan, bukti_penyaluran } = await req.json();
 
     if (!id_penerima || !jenis_bantuan || !metode_penyaluran || nominal_bantuan === undefined) {
       return NextResponse.json({ message: 'Data penyaluran tidak lengkap.' }, { status: 400 });
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
         metode_penyaluran,
         nominal_bantuan,
         catatan,
+        bukti_penyaluran,
         tanggal_penyaluran: new Date(),
         status_penyaluran: StatusPenyaluran.DIPROSES, // Initial status
       },
@@ -79,11 +81,11 @@ export async function POST(req: NextRequest) {
       note: `Jenis: ${jenis_bantuan}, Nominal: ${nominal_bantuan}`,
     });
 
-    // Mock external bank API (random success/fail after 2s)
+    // Mock external bank API (always success after 2s for this prototype)
     setTimeout(async () => {
-      const isSuccess = Math.random() > 0.3; // 70% success rate
-      const finalStatus = isSuccess ? StatusPenyaluran.BERHASIL : StatusPenyaluran.GAGAL;
-      const finalCatatan = isSuccess ? catatan : (catatan ? `${catatan} - Gagal transaksi bank.` : 'Gagal transaksi bank.');
+      const isSuccess = true; // Changed from random to always true for reliability
+      const finalStatus = StatusPenyaluran.BERHASIL;
+      const finalCatatan = catatan || 'Penyaluran berhasil diproses oleh bank.';
 
       const updatedPenyaluran = await prisma.tbl_penyaluran.update({
         where: { id: newPenyaluran.id },
@@ -174,7 +176,15 @@ export async function GET(req: NextRequest) {
 
     const total = await prisma.tbl_penyaluran.count({ where });
 
-    return NextResponse.json({ data: penyaluranRecords, total }, { status: 200 });
+    const processedRecords = penyaluranRecords.map((record) => ({
+      ...record,
+      penerima: {
+        ...record.penerima,
+        nik: decrypt(record.penerima.nik),
+      },
+    }));
+
+    return NextResponse.json({ data: processedRecords, total }, { status: 200 });
   } catch (error) {
     console.error('Error fetching penyaluran records:', error);
     return NextResponse.json({ message: 'Gagal mengambil data penyaluran.' }, { status: 500 });

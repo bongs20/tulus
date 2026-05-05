@@ -12,16 +12,16 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const sanggahanSchema = z.object({
   nama_pengaju: z.string().min(1, { message: 'Nama tidak boleh kosong.' }),
+  nomor_telepon: z.string().optional(),
   isi_sanggahan: z.string().min(10, { message: 'Sanggahan terlalu pendek.' }),
 });
 
@@ -40,6 +40,7 @@ export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModal
     resolver: zodResolver(sanggahanSchema),
     defaultValues: {
       nama_pengaju: '',
+      nomor_telepon: '',
       isi_sanggahan: '',
     },
   });
@@ -76,9 +77,9 @@ export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModal
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Ajukan Sanggahan</DialogTitle>
+          <DialogTitle>Ajukan Sanggahan / Banding</DialogTitle>
           <DialogDescription>
-            Isi formulir di bawah untuk mengajukan sanggahan terkait penerima bantuan ini.
+            Gunakan formulir ini untuk melaporkan ketidaksesuaian data (Sanggahan) atau mengajukan keberatan atas status Anda sendiri (Banding).
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -92,6 +93,23 @@ export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModal
                   <FormControl>
                     <Input placeholder="Nama lengkap pengaju" {...field} disabled={isLoading} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="nomor_telepon"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nomor WhatsApp (Opsional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Contoh: 08123456789" {...field} disabled={isLoading} />
+                  </FormControl>
+                  <FormDescription className="text-[10px]">
+                    Kami akan mengirimkan notifikasi status sanggahan via WA jika nomor diisi.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

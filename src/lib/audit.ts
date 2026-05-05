@@ -1,5 +1,5 @@
 // src/lib/audit.ts
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const getPrisma = () => new PrismaClient();
 

@@ -4,7 +4,8 @@ import { mockDtksSync } from '@/lib/dtks';
 import { decrypt, encrypt } from '@/lib/crypto';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 import { sanitizeObject } from '@/lib/sanitizer';
-import { sendSms } from '@/lib/sms';
+import { sendWhatsappNotification } from '@/lib/fonnte';
+import { sendTelegramNotification } from '@/lib/telegram';
 
 const MAX_RETRY = 3;
 const RETRY_DELAY_MS = 30_000;
@@ -123,10 +124,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (!isSyncFailed && dtksResult?.status === 'MATCH' && penerima.nomor_telepon && penerima.nomor_telepon !== '0') {
-      await sendSms(
+      await sendWhatsappNotification(
         penerima.nomor_telepon,
         'Verifikasi awal berhasil. Data Anda masuk ke antrian verifikasi faktual TULUS.'
       );
+      
+      // Kirim monitoring ke admin
+      await sendTelegramNotification(`📢 *SINKRONISASI BERHASIL*\nNama: ${nama}\nNIK: ${nik}\nStatus: MATCH`);
     }
 
     if (isSyncFailed) {

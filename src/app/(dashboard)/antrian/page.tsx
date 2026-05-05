@@ -19,7 +19,7 @@ export default function AntrianPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-120px)] flex-col gap-4 overflow-hidden">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h2 className="text-3xl font-semibold text-[#191b23]">Antrian Verifikasi Faktual</h2>
@@ -38,7 +38,7 @@ export default function AntrianPage() {
           </div>
         </div>
 
-        <div className="hidden min-h-0 flex-1 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
+        <div className="hidden min-h-0 flex-1 rounded-xl border border-slate-200 bg-white shadow-sm md:block">
           <DetailPanel
             penerima={selectedPenerima}
             onVerificationSuccess={handleVerificationSuccess}

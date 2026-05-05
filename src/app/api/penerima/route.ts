@@ -1,6 +1,6 @@
-// src/app/api/penerima/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, StatusVerifikasi } from '@prisma/client';
+export const dynamic = 'force-dynamic';
+import { Prisma, StatusVerifikasi, StatusPenyaluran } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
@@ -9,8 +9,7 @@ import { z } from 'zod';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 import { sanitizeObject } from '@/lib/sanitizer';
 import { createPenerimaSchema } from '@/lib/validators';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 async function checkRole(req: NextRequest, allowedRoles: string[]) {
   const session = await getServerSession(authOptions);
@@ -41,31 +40,33 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '25');
   const status = searchParams.get('status') as StatusVerifikasi | undefined;
   const search = searchParams.get('search') || '';
+  const excludeDisalurkan = searchParams.get('excludeDisalurkan') === 'true';
 
   const skip = (page - 1) * limit;
 
-  const where: {
-    status_verifikasi?: StatusVerifikasi;
-    OR?: { nama_lengkap: { contains: string; mode: 'insensitive' } }[];
-  } = {};
+  const where: Prisma.tbl_penerimaWhereInput = {};
   if (status) where.status_verifikasi = status;
+
+  if (excludeDisalurkan) {
+    where.penyaluran = {
+      none: {
+        OR: [
+          { status_penyaluran: 'BERHASIL' },
+          { status_penyaluran: 'DIPROSES' }
+        ]
+      },
+    };
+  }
+
   if (search) {
-    // Search encrypted NIK (will require decryption for comparison) or unencrypted nama_lengkap
-    // For encrypted fields, direct 'contains' is not possible. A more advanced search would involve
-    // decrypting all NIKs, searching, then re-encrypting. For simplicity, will search unencrypted fields.
-    // If NIK search is critical, it would require a separate lookup or a different encryption strategy.
-    // For now, assume search is primarily on nama_lengkap.
-    // For encrypted NIK, if search by NIK is needed, it would look like:
-    // 1. Fetch all penerima
-    // 2. Decrypt all NIKs
-    // 3. Filter client-side. This is not scalable for large datasets.
-    // A proper solution for encrypted search often involves searchable encryption or partial encryption.
-    where.OR = [
-      { nama_lengkap: { contains: search, mode: 'insensitive' } },
-      // To search NIKs: Fetch all, decrypt, filter (not performant).
-      // For this implementation, NIK search will rely on exact match after decryption from frontend.
-      // Or we can add an unencrypted, indexed NIK hash for quick lookup if full NIK is encrypted.
-    ];
+    const isNikSearch = /^\d+$/.test(search);
+    
+    if (isNikSearch) {
+      // Deterministic encryption allows searching by exact NIK match
+      where.nik = { equals: encrypt(search) };
+    } else {
+      where.nama_lengkap = { contains: search };
+    }
   }
 
   try {
@@ -77,6 +78,7 @@ export async function GET(req: NextRequest) {
       include: {
         fotos: true, // Include photos for detail view
         desil_data: { take: 1, orderBy: { tanggal_sinkronisasi: 'desc' } }, // Latest desil data
+        sanggahan: { orderBy: { tanggal_sanggahan: 'desc' } }, // Include sanggahan
       },
     });
 
@@ -175,6 +177,15 @@ export async function POST(req: NextRequest) {
             url_foto: url,
             nama_file: `foto-${nik}-${Date.now()}.jpg`, // Generic name
           })),
+        },
+        desil_data: {
+          create: {
+            nik: encryptedNik,
+            nilai_desil: 0,
+            sumber_data: 'INPUT ADMIN',
+            status_sinkronisasi: 'TERTUNDA',
+            tanggal_sinkronisasi: new Date(),
+          },
         },
       },
     });

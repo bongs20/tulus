@@ -1,13 +1,13 @@
 // src/app/api/publik/penerima/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, StatusVerifikasi } from '@prisma/client';
-import { decrypt } from '@/lib/crypto'; // Import decrypt function
+export const dynamic = 'force-dynamic';
+import { prisma } from '@/lib/prisma';
+import { StatusVerifikasi } from '@prisma/client';
+import { encrypt, decrypt } from '@/lib/crypto';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 
-const prisma = new PrismaClient();
-
 export async function GET(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -20,12 +20,28 @@ export async function GET(req: NextRequest) {
   const skip = (page - 1) * limit;
 
   try {
-    const approvedPenerima = await prisma.tbl_penerima.findMany({
-      where: { status_verifikasi: StatusVerifikasi.DISETUJUI },
+    const isNikSearch = /^\d+$/.test(search);
+    const where: any = {};
+
+    if (search) {
+      if (isNikSearch) {
+        where.nik = { equals: encrypt(search) };
+      } else {
+        where.OR = [
+          { nama_lengkap: { contains: search } },
+          { alamat: { contains: search } },
+        ];
+      }
+    }
+
+    const total = await prisma.tbl_penerima.count({ where });
+    const paginatedPenerima = await prisma.tbl_penerima.findMany({
+      where,
       select: {
         id: true,
         nama_lengkap: true,
         nik: true,
+        status_verifikasi: true,
         alamat: true,
         penyaluran: {
           where: { status_penyaluran: 'BERHASIL' },
@@ -40,28 +56,15 @@ export async function GET(req: NextRequest) {
           },
         },
       },
+      skip,
+      take: limit,
       orderBy: { nama_lengkap: 'asc' },
     });
-
-    const normalizedSearch = search.trim().toLowerCase();
-    const filteredPenerima = normalizedSearch
-      ? approvedPenerima.filter((penerima) => {
-          const decryptedNik = decrypt(penerima.nik).toLowerCase();
-          return (
-            penerima.nama_lengkap.toLowerCase().includes(normalizedSearch) ||
-            penerima.alamat.toLowerCase().includes(normalizedSearch) ||
-            decryptedNik.includes(normalizedSearch)
-          );
-        })
-      : approvedPenerima;
-
-    const total = filteredPenerima.length;
-    const paginatedPenerima = filteredPenerima.slice(skip, skip + limit);
 
     const processedPenerima = paginatedPenerima.map((penerima) => {
       const decryptedNik = decrypt(penerima.nik);
       const maskedNik = `${decryptedNik.substring(0, 6)}****${decryptedNik.substring(10, 14)}`; // Example masking
-      
+
       const decryptedFotos = penerima.fotos.map(foto => ({
         ...foto,
         url_foto: decrypt(foto.url_foto),
@@ -81,4 +84,4 @@ export async function GET(req: NextRequest) {
     console.error('Error fetching public penerima data:', error);
     return NextResponse.json({ message: 'Gagal mengambil data publik.' }, { status: 500 });
   }
-}
+} 

@@ -1,13 +1,18 @@
 // src/app/api/laporan/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, JenisBantuan, StatusPenyaluran } from '@prisma/client';
+export const dynamic = 'force-dynamic';
+import { Prisma, JenisBantuan, StatusPenyaluran } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import ExcelJS from 'exceljs';
 import { startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { applyRateLimiter } from '@/lib/rate-limiter';
+import { renderLaporanPdf } from '@/lib/laporan-pdf';
 
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { decrypt } from '@/lib/crypto';
+
+export const runtime = 'nodejs';
 
 async function checkRole(req: NextRequest, allowedRoles: string[]) {
   const session = await getServerSession(authOptions);
@@ -21,7 +26,7 @@ async function checkRole(req: NextRequest, allowedRoles: string[]) {
 }
 
 export async function GET(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -33,9 +38,16 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const periode = searchParams.get('periode'); // YYYY-MM format
-  const jenisBantuan = searchParams.get('jenisBantuan') as JenisBantuan | null;
+  const rawJenisBantuan = searchParams.get('jenisBantuan');
+  const jenisBantuan = rawJenisBantuan && Object.values(JenisBantuan).includes(rawJenisBantuan as JenisBantuan)
+    ? rawJenisBantuan as JenisBantuan
+    : null;
   const wilayah = searchParams.get('wilayah'); // Not yet implemented in schema, will be a placeholder for filtering
   const exportType = searchParams.get('export') as 'pdf' | 'excel' | null;
+
+  if (rawJenisBantuan && !jenisBantuan) {
+    return NextResponse.json({ message: 'Jenis bantuan tidak valid.' }, { status: 400 });
+  }
 
   let startDate: Date | undefined;
   let endDate: Date | undefined;
@@ -45,17 +57,19 @@ export async function GET(req: NextRequest) {
       const parsedDate = parseISO(`${periode}-01`); // Parse YYYY-MM to first day of month
       startDate = startOfMonth(parsedDate);
       endDate = endOfMonth(parsedDate);
-    } catch (e) {
+    } catch {
       return NextResponse.json({ message: 'Format periode tidak valid (YYYY-MM).' }, { status: 400 });
     }
   }
 
-  const whereClause: any = {
-    tanggal_penyaluran: {
+  const whereClause: Prisma.tbl_penyaluranWhereInput = {};
+
+  if (startDate || endDate) {
+    whereClause.tanggal_penyaluran = {
       gte: startDate,
       lte: endDate,
-    },
-  };
+    };
+  }
 
   if (jenisBantuan) whereClause.jenis_bantuan = jenisBantuan;
   // if (wilayah) whereClause.penerima.alamat.contains = wilayah; // Requires address parsing or separate field
@@ -113,7 +127,7 @@ export async function GET(req: NextRequest) {
       ? (totalTersalurkanCount / totalPenyaluranOverall) * 100
       : 0;
 
-    const programBreakdown = await prisma.tbl_penyaluran.groupBy({
+    const rawProgramBreakdown = await prisma.tbl_penyaluran.groupBy({
       by: ['jenis_bantuan'],
       _count: {
         id: true,
@@ -130,6 +144,42 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    const programBreakdown = rawProgramBreakdown.map((item) => ({
+      jenis_bantuan: item.jenis_bantuan,
+      _count: {
+        id: item._count.id,
+      },
+      _sum: {
+        nominal_bantuan: item._sum.nominal_bantuan?.toNumber() || 0,
+      },
+    }));
+
+    const detailPenyaluranRecords = await prisma.tbl_penyaluran.findMany({
+      where: {
+        ...whereClause,
+        status_penyaluran: StatusPenyaluran.BERHASIL,
+      },
+      include: {
+        penerima: {
+          select: {
+            nama_lengkap: true,
+            nik: true,
+          },
+        },
+      },
+      orderBy: { tanggal_penyaluran: 'desc' },
+    });
+
+    const detailPenyaluran = detailPenyaluranRecords.map((item) => ({
+      id: item.id,
+      nama_lengkap: item.penerima.nama_lengkap,
+      nik: decrypt(item.penerima.nik),
+      jenis_bantuan: item.jenis_bantuan,
+      nominal_bantuan: item.nominal_bantuan.toNumber(),
+      bukti_penyaluran: item.bukti_penyaluran,
+      tanggal_penyaluran: item.tanggal_penyaluran,
+    }));
+
     const reportData = {
       periode: periode || 'Semua Waktu',
       jenisBantuan: jenisBantuan || 'Semua',
@@ -138,8 +188,10 @@ export async function GET(req: NextRequest) {
       totalAnggaran,
       totalTersalurkanCount,
       totalDitolakCount,
+      totalProsesCount,
       percentTersalurkan,
       programBreakdown,
+      detailPenyaluran,
     };
 
     if (exportType === 'excel') {
@@ -164,17 +216,18 @@ export async function GET(req: NextRequest) {
       worksheet.addRow(['Total Anggaran Tersalurkan:', totalAnggaran]);
       worksheet.addRow(['Total Penyaluran Berhasil:', reportData.totalTersalurkanCount]);
       worksheet.addRow(['Total Penyaluran Gagal:', reportData.totalDitolakCount]);
+      worksheet.addRow(['Total Penyaluran Diproses:', reportData.totalProsesCount]);
       worksheet.addRow(['% Tersalurkan:', `${reportData.percentTersalurkan.toFixed(2)}%`]);
       worksheet.addRow([]);
 
       // Add Program Breakdown
-      worksheet.addRow(['Ringkasan Per Program']);
-      worksheet.getCell('A10').font = { bold: true };
-      worksheet.addRow(['Jenis Bantuan', 'Jumlah Penyaluran', 'Total Nominal']);
-      worksheet.getRow(11).font = { bold: true };
+      const programTitleRow = worksheet.addRow(['Ringkasan Per Program']);
+      programTitleRow.font = { bold: true };
+      const programHeaderRow = worksheet.addRow(['Jenis Bantuan', 'Jumlah Penyaluran', 'Total Nominal']);
+      programHeaderRow.font = { bold: true };
 
-      programBreakdown.forEach((item) => {
-        worksheet.addRow([item.jenis_bantuan, item._count.id, item._sum.nominal_bantuan?.toNumber() || 0]);
+      reportData.programBreakdown.forEach((item) => {
+        worksheet.addRow([item.jenis_bantuan, item._count.id, item._sum.nominal_bantuan || 0]);
       });
 
       const buffer = await workbook.xlsx.writeBuffer();
@@ -186,10 +239,18 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (exportType === 'pdf') {
-      return NextResponse.json(
-        { message: 'Ekspor PDF belum tersedia pada build ini.' },
-        { status: 501 }
-      );
+      const buffer = await renderLaporanPdf({
+        ...reportData,
+        generatedAt: new Date(),
+      });
+
+      return new NextResponse(new Uint8Array(buffer), {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="laporan_penyaluran_${periode || 'all'}.pdf"`,
+          'Cache-Control': 'no-store',
+        },
+      });
     }
 
     return NextResponse.json(reportData, { status: 200 });

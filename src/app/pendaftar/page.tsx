@@ -58,7 +58,7 @@ export default function PendaftarMandiriPage() {
         toast.error(result.message || 'Pendaftaran gagal.');
         setSubmissionStatus('error');
       }
-    } catch (error) {
+    } catch {
       const message = 'Terjadi kesalahan fatal saat mengirim data pendaftaran.';
       toast.error(message);
       setSubmissionMessage(message);

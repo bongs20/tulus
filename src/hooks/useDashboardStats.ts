@@ -1,6 +1,7 @@
 // src/hooks/useDashboardStats.ts
 import useSWR from 'swr';
-import { StatusPenyaluran, StatusVerifikasi, JenisBantuan } from '@prisma/client';
+import type { KeyedMutator } from 'swr';
+import { StatusPenyaluran, JenisBantuan } from '@prisma/client';
 
 interface PerProgramStat {
   jenis_bantuan: JenisBantuan;
@@ -36,6 +37,7 @@ interface DashboardStats {
   lolos_awal: number;
   disetujui: number;
   tersalurkan: number;
+  total_anggaran: number;
   per_program: PerProgramStat[];
   monthly_trend: MonthlyTrendItem[];
   funnel_data: { name: string; value: number }[];
@@ -45,14 +47,20 @@ interface DashboardStats {
 interface UseDashboardStatsResult {
   data: DashboardStats | undefined;
   isLoading: boolean;
-  isError: any;
-  mutate: (data?: any, shouldRevalidate?: boolean) => Promise<any>;
+  isError: Error | undefined;
+  mutate: KeyedMutator<DashboardStats>;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = async (url: string): Promise<DashboardStats> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Gagal memuat statistik dashboard.');
+  }
+  return response.json() as Promise<DashboardStats>;
+};
 
 export function useDashboardStats(): UseDashboardStatsResult {
-  const { data, error, isLoading, mutate } = useSWR<DashboardStats>(
+  const { data, error, isLoading, mutate } = useSWR<DashboardStats, Error>(
     '/api/dashboard/stats',
     fetcher,
     {

@@ -15,14 +15,18 @@ export function sanitize(dirty: string | undefined | null): string {
 }
 
 // Function to sanitize all string properties of an object
-export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
-  const sanitizedObj: any = {};
-  for (const key in obj) {
-    if (typeof obj[key] === 'string') {
-      sanitizedObj[key] = sanitize(obj[key]);
+export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
+  const sanitizedObj = {} as T;
+
+  for (const key of Object.keys(obj) as Array<keyof T>) {
+    const value = obj[key];
+
+    if (typeof value === 'string') {
+      sanitizedObj[key] = sanitize(value) as T[typeof key];
     } else {
-      sanitizedObj[key] = obj[key];
+      sanitizedObj[key] = value;
     }
   }
-  return sanitizedObj as T;
+
+  return sanitizedObj;
 }

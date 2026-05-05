@@ -13,6 +13,7 @@ interface PublicPenerima {
   nik: string;
   kecamatan: string;
   programs: string;
+  status_verifikasi: string;
 }
 
 export default function PublikPage() {
@@ -148,7 +149,7 @@ export default function PublikPage() {
 
           <Card className="overflow-hidden border-border bg-card shadow-sm lg:col-span-3">
             <CardHeader className="border-b border-border bg-muted/50 px-6 py-4">
-              <CardTitle className="text-lg font-semibold text-foreground">Daftar Penerima Bantuan Disetujui</CardTitle>
+              <CardTitle className="text-lg font-semibold text-foreground">Daftar Pendaftar Bantuan</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
             {fetchError ? (
@@ -167,6 +168,7 @@ export default function PublikPage() {
                         <th className="px-6 py-3 text-xs text-muted-foreground">NAMA PENERIMA</th>
                         <th className="px-6 py-3 text-xs text-muted-foreground">WILAYAH/KECAMATAN</th>
                         <th className="px-6 py-3 text-xs text-muted-foreground">JENIS BANTUAN</th>
+                        <th className="px-6 py-3 text-xs text-muted-foreground">STATUS</th>
                         <th className="px-6 py-3 text-xs text-muted-foreground">AKSI</th>
                       </tr>
                     </thead>
@@ -187,7 +189,17 @@ export default function PublikPage() {
                               <div className="text-xs text-muted-foreground">NIK: {item.nik}</div>
                             </td>
                             <td className="px-6 py-4 text-sm text-foreground">{item.kecamatan}</td>
-                            <td className="px-6 py-4 text-sm text-foreground">{item.programs}</td>
+                            <td className="px-6 py-4 text-sm text-foreground">{item.programs || '-'}</td>
+                            <td className="px-6 py-4 text-sm font-medium">
+                              <span className={`inline-block rounded-full px-2 py-1 text-[10px] uppercase tracking-wider ${
+                                item.status_verifikasi === 'DISETUJUI' ? 'bg-emerald-100 text-emerald-700' :
+                                item.status_verifikasi === 'MATCH' ? 'bg-blue-100 text-blue-700' :
+                                item.status_verifikasi === 'MISMATCH' ? 'bg-rose-100 text-rose-700' :
+                                'bg-amber-100 text-amber-700'
+                              }`}>
+                                {item.status_verifikasi}
+                              </span>
+                            </td>
                             <td className="px-6 py-4">
                               <SanggahanFormModal id_penerima={item.id}>
                                 <button className="rounded px-3 py-1.5 text-xs font-semibold text-destructive transition-all hover:bg-red-50" type="button">

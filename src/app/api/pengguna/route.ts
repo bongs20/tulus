@@ -1,6 +1,6 @@
 // src/app/api/pengguna/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, Role, StatusAkun } from '@prisma/client';
+import { Prisma, PrismaClient, Role } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
@@ -31,7 +31,7 @@ const createUserSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -48,11 +48,11 @@ export async function GET(req: NextRequest) {
 
   const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const where: Prisma.tbl_penggunaWhereInput = {};
   if (search) {
     where.OR = [
-      { username: { contains: search, mode: 'insensitive' } },
-      { nama_lengkap: { contains: search, mode: 'insensitive' } },
+      { username: { contains: search } },
+      { nama_lengkap: { contains: search } },
     ];
   }
 
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }

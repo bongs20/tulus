@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
+import Link from 'next/link';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -32,14 +33,25 @@ function LoginForm() {
       return;
     }
 
-    if (result?.url) {
-      router.push(result.url);
-      return;
-    }
-
+    // After successful login, fetch session to get role and redirect accordingly
     const session = await getSession();
-    if (session?.user?.role === 'PETUGAS_VERIFIKATOR') router.push('/antrian');
-    else router.push('/dashboard');
+    
+    if (session?.user) {
+      toast.success('Login Berhasil!');
+      if (session.user.role === 'PETUGAS_VERIFIKATOR') {
+        router.push('/antrian');
+      } else {
+        router.push('/dashboard');
+      }
+    } else {
+      // Fallback if session is not immediately available
+      const callbackUrl = searchParams.get('callbackUrl');
+      if (callbackUrl && !callbackUrl.includes('/login')) {
+        router.push(callbackUrl);
+      } else {
+        router.push('/dashboard');
+      }
+    }
   };
 
   return (
@@ -60,6 +72,14 @@ function LoginForm() {
           </div>
           <Button type="submit" className="w-full bg-[#1f63db] hover:bg-[#194fb2]" disabled={isLoading}>{isLoading ? 'Memuat...' : 'Login'}</Button>
         </form>
+        <div className="mt-6 border-t border-[#d7e3f7] pt-6 text-center">
+          <Link href="/publik">
+            <Button variant="outline" className="w-full border-blue-200 text-blue-700 hover:bg-blue-50">
+              <span className="material-symbols-outlined mr-2 text-[18px]">arrow_back</span>
+              Kembali ke Portal Publik
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );

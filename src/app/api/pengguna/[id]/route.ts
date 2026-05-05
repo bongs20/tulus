@@ -1,6 +1,6 @@
 // src/app/api/pengguna/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, Role, StatusAkun } from '@prisma/client';
+import { Prisma, PrismaClient, Role, StatusAkun } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
@@ -35,7 +35,7 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -51,11 +51,12 @@ export async function PUT(
     const body = await req.json();
     const validatedData = updateUserSchema.parse(body);
     const sanitizedData = sanitizeObject(validatedData);
-    let { password, ...dataToUpdate } = sanitizedData;
+    const { password, ...sanitizedFields } = sanitizedData;
+    const dataToUpdate: Prisma.tbl_penggunaUpdateInput = { ...sanitizedFields };
 
     // Hash new password if provided
     if (password && password.length > 0) {
-      (dataToUpdate as any).password_hash = await hash(password, 12);
+      dataToUpdate.password_hash = await hash(password, 12);
     }
 
     const updatedUser = await prisma.tbl_pengguna.update({
@@ -91,7 +92,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }

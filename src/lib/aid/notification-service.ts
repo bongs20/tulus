@@ -1,5 +1,5 @@
 import { AidApplicationStatus } from "@prisma/client";
-import { sendSms } from "@/lib/sms";
+import { sendWhatsappNotification } from "@/lib/fonnte";
 
 function buildCitizenMessage(
   status: AidApplicationStatus,
@@ -34,5 +34,5 @@ export async function notifyCitizenStatus(params: {
     params.note,
   );
 
-  return sendSms(params.phoneNumber, message);
+  return sendWhatsappNotification(params.phoneNumber, message);
 }

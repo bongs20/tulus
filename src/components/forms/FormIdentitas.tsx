@@ -1,7 +1,7 @@
 // src/components/forms/FormIdentitas.tsx
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { identitasSchema } from '@/lib/validators';
@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 type IdentitasFormValues = z.infer<typeof identitasSchema>;
@@ -36,7 +36,7 @@ interface FormIdentitasProps {
 
 export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasProps) {
   const form = useForm<IdentitasFormValues>({
-    resolver: zodResolver(identitasSchema),
+    resolver: zodResolver(identitasSchema) as Resolver<IdentitasFormValues>,
     defaultValues: initialData,
   });
 
@@ -56,7 +56,14 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
     try {
       // Simulate API call to check NIK uniqueness/validity
       const response = await fetch(`/api/validate-nik?nik=${nik}`);
-      const data = await response.json();
+      
+      let data: { isDuplicate?: boolean; message?: string };
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error('Failed to parse NIK validation response as JSON:', e);
+        throw new Error('Server returned an invalid response.');
+      }
 
       if (!response.ok) {
         setNikDuplicateError(data.message || 'Gagal memvalidasi NIK.');
@@ -65,21 +72,13 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
       }
     } catch (error) {
       console.error('NIK validation error:', error);
-      setNikDuplicateError('Terjadi kesalahan saat memeriksa NIK.');
-      toast.error('Terjadi kesalahan saat memeriksa NIK.');
+      const message = error instanceof Error ? error.message : 'Terjadi kesalahan saat memeriksa NIK.';
+      setNikDuplicateError(message);
+      toast.error(message);
     } finally {
       setNikCheckLoading(false);
     }
   };
-
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'nik' && value.nik) {
-        validateNik(value.nik);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
 
   const onSubmit = (data: IdentitasFormValues) => {
     if (nikDuplicateError || nikCheckLoading) {
@@ -104,8 +103,7 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
                   {...field}
                   onChange={(e) => {
                     field.onChange(e);
-                    // Trigger NIK validation on change
-                    // This is handled by useEffect watch now
+                    void validateNik(e.target.value);
                   }}
                   disabled={isLoading || nikCheckLoading}
                 />
@@ -161,6 +159,9 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
                     disabled={(date) =>
                       date > new Date() || date < new Date("1900-01-01")
                     }
+                    captionLayout="dropdown"
+                    fromYear={1900}
+                    toYear={new Date().getFullYear()}
                     initialFocus
                   />
                 </PopoverContent>

@@ -134,17 +134,60 @@ export async function POST(req: NextRequest) {
 
   try {
     const encryptedNik = encrypt(nik);
+    
+    // Gunakan pencarian manual untuk reliabilitas pada SQLite Bytes column
+    const allWarga = await prisma.tbl_warga.findMany();
+    const warga = allWarga.find(w => {
+      try {
+        return decrypt(w.nik) === nik;
+      } catch {
+        return false;
+      }
+    });
 
-    // --- Security Re-validation ---
-    const warga = await prisma.tbl_warga.findFirst({ where: { nik: encryptedNik } });
     if (!warga || !warga.is_dalam_jangkauan || warga.status_dtks === 'LUAR_JANGKAUAN' || warga.status_dtks === 'DATA_TIDAK_ADA') {
       return NextResponse.json({ message: 'Warga tidak memenuhi syarat untuk mendaftar.' }, { status: 403 });
     }
-    const alreadyRegistered = await prisma.tbl_penerima.findFirst({ where: { nik: encryptedNik } });
+    
+    const allPenerima = await prisma.tbl_penerima.findMany();
+    const alreadyRegistered = allPenerima.find(p => {
+      try {
+        return decrypt(p.nik) === nik;
+      } catch {
+        return false;
+      }
+    });
+
     if (alreadyRegistered) {
       return NextResponse.json({ message: 'NIK ini sudah terdaftar.' }, { status: 409 });
     }
     // --- End Security Re-validation ---
+
+    // Attempt direct DTKS Sync
+    const { mockDtksSync } = await import('@/lib/dtks');
+    let dtksResult: Awaited<ReturnType<typeof mockDtksSync>> | null = null;
+    try {
+      dtksResult = await mockDtksSync({ 
+        nik, 
+        nama: penerimaData.nama_lengkap, 
+        tanggal_lahir: new Date(penerimaData.tanggal_lahir) 
+      });
+    } catch (e) {
+      console.warn('Initial DTKS sync failed, marking as TERTUNDA');
+    }
+
+    const isSyncFailed = !dtksResult;
+    const mappedStatusVerifikasi = isSyncFailed
+      ? 'MENUNGGU'
+      : dtksResult?.status === 'MATCH'
+        ? 'MATCH'
+        : 'MISMATCH';
+
+    const mappedStatusSinkronisasi = isSyncFailed
+      ? 'TERTUNDA'
+      : dtksResult?.status === 'MATCH'
+        ? 'MATCH'
+        : 'MISMATCH';
 
     const newPenerima = await prisma.$transaction(async (tx) => {
       const penerima = await tx.tbl_penerima.create({
@@ -152,7 +195,7 @@ export async function POST(req: NextRequest) {
           ...penerimaData,
           nik: encryptedNik,
           keterangan_ekonomi: penerimaData.keterangan_ekonomi ?? `Registrasi mandiri. Nilai Kesejahteraan Awal: ${warga.nilai_kesejahteraan}`,
-          status_verifikasi: 'MENUNGGU',
+          status_verifikasi: mappedStatusVerifikasi,
         },
       });
 
@@ -166,8 +209,45 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      await tx.tbl_desil.create({
+        data: {
+          id_penerima: penerima.id,
+          nik: encryptedNik,
+          nilai_desil: dtksResult?.desil ?? warga.nilai_kesejahteraan,
+          sumber_data: 'PENDAFTARAN MANDIRI',
+          status_sinkronisasi: mappedStatusSinkronisasi,
+          tanggal_sinkronisasi: new Date(),
+        },
+      });
+
       return penerima;
     });
+
+    // Send Notifications
+    const { sendTelegramNotification } = await import('@/lib/telegram');
+    const { sendWhatsappNotification } = await import('@/lib/fonnte');
+    
+    if (!isSyncFailed) {
+      let statusMsg = '';
+      if (dtksResult?.status === 'MATCH') {
+        statusMsg = 'Verifikasi awal berhasil. Data Anda masuk ke antrian verifikasi faktual TULUS.';
+      } else if (dtksResult?.status === 'MISMATCH') {
+        statusMsg = 'Mohon maaf, sinkronisasi awal gagal (MISMATCH). Data Anda tidak sesuai dengan DTKS. Silakan ajukan sanggahan melalui portal publik TULUS.';
+      }
+      
+      // 1. Kirim WhatsApp ke Warga via Fonnte
+      if (statusMsg && newPenerima.nomor_telepon && newPenerima.nomor_telepon !== '0') {
+        await sendWhatsappNotification(newPenerima.nomor_telepon, statusMsg);
+      }
+
+      // 2. Kirim Notifikasi ke Admin via Telegram (Monitoring)
+      const adminMsg = `🆕 *PENDAFTAR BARU*\nNama: ${newPenerima.nama_lengkap}\nNIK: ${nik}\nStatus: ${dtksResult?.status}\nWilayah: ${newPenerima.alamat}`;
+      await sendTelegramNotification(adminMsg);
+
+      // 3. Kirim WhatsApp ke Admin (Backup Monitoring)
+      const adminPhone = process.env.ADMIN_PHONE || "085157441531";
+      await sendWhatsappNotification(adminPhone, `[ADMIN TULUS] Ada pendaftar baru:\nNama: ${newPenerima.nama_lengkap}\nStatus: ${dtksResult?.status}\nCek segera di dashboard.`);
+    }
 
     return NextResponse.json({
       message: 'Pendaftaran mandiri berhasil. Data Anda sudah tercatat dan menunggu evaluasi petugas.',

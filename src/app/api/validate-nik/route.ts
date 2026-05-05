@@ -7,7 +7,7 @@ import { applyRateLimiter } from '@/lib/rate-limiter';
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any); // Cast to any to avoid NextRequest/NextResponse type conflict
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -20,17 +20,24 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    console.log(`Checking NIK: ${nik}`);
     const existingPenerima = await prisma.tbl_penerima.findMany({
       select: { id: true, nik: true },
     });
 
+    console.log(`Found ${existingPenerima.length} existing recipients to check.`);
+
     const isDuplicate = existingPenerima.some((penerima) => {
       try {
-        return decrypt(penerima.nik) === nik;
+        const decryptedNik = decrypt(penerima.nik);
+        return decryptedNik === nik;
       } catch {
+        console.error(`Failed to decrypt record ${penerima.id}`);
         return false;
       }
     });
+
+    console.log(`NIK ${nik} duplicate status: ${isDuplicate}`);
 
     if (isDuplicate) {
       return NextResponse.json({ isDuplicate: true, message: 'NIK sudah terdaftar.' }, { status: 200 });
@@ -39,6 +46,7 @@ export async function GET(req: NextRequest) {
     }
   } catch (error) {
     console.error('Error checking NIK:', error);
-    return NextResponse.json({ message: 'Terjadi kesalahan pada server.' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan pada server.';
+    return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }

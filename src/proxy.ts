@@ -8,7 +8,7 @@ const secret = process.env.NEXTAUTH_SECRET;
 const pathRoles: Record<string, readonly Role[]> = {
   "/dashboard": ["ADMINISTRATOR", "KEPALA_BIDANG", "PETUGAS_VERIFIKATOR"],
   "/antrian": ["ADMINISTRATOR", "PETUGAS_VERIFIKATOR"],
-  "/penyaluran": ["ADMINISTRATOR", "PETUGAS_VERIFIKATOR"],
+  "/penyaluran": ["ADMINISTRATOR", "KEPALA_BIDANG", "PETUGAS_VERIFIKATOR"],
   "/laporan": ["ADMINISTRATOR", "KEPALA_BIDANG"],
   "/pengaturan": ["ADMINISTRATOR"],
 };

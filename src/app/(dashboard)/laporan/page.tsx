@@ -23,12 +23,14 @@ interface ReportData {
   totalAnggaran: number;
   totalTersalurkanCount: number;
   totalDitolakCount: number;
+  totalProsesCount: number;
   percentTersalurkan: number;
   programBreakdown: {
     jenis_bantuan: JenisBantuan;
     _count: { id: number };
     _sum: { nominal_bantuan: number | null };
   }[];
+  detailPenyaluran?: any[];
 }
 
 const filterSchema = z.object({
@@ -81,12 +83,17 @@ export default function LaporanPage() {
   };
 
   useEffect(() => {
-    void fetchReport(form.getValues());
+    const timeoutId = window.setTimeout(() => {
+      void fetchReport(form.getValues());
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExport = async (type: 'pdf' | 'excel') => {
     setIsLoading(true);
     try {
+      const extension = type === 'excel' ? 'xlsx' : 'pdf';
       const filters = form.getValues();
       const queryParams = new URLSearchParams();
       if (filters.periode) queryParams.append('periode', filters.periode);
@@ -105,7 +112,7 @@ export default function LaporanPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `laporan_penyaluran_${filters.periode || 'all'}.${type}`;
+      a.download = `laporan_penyaluran_${filters.periode || 'all'}.${extension}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -225,6 +232,50 @@ export default function LaporanPage() {
                           <TableCell>{item.jenis_bantuan}</TableCell>
                           <TableCell>{item._count.id}</TableCell>
                           <TableCell className="text-right">{formatCurrency(item._sum.nominal_bantuan || 0)}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-[#d7e3f7] bg-white">
+            <div className="border-b border-[#d7e3f7] bg-[#faf8ff] p-4"><h3 className="text-lg font-semibold">Detail Penyaluran (Riwayat)</h3></div>
+            <div className="p-4">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Penerima</TableHead>
+                      <TableHead>Program</TableHead>
+                      <TableHead className="text-right">Nominal</TableHead>
+                      <TableHead className="text-center">Bukti</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {!report.detailPenyaluran || report.detailPenyaluran.length === 0 ? (
+                      <TableRow><TableCell colSpan={4} className="text-center">Tidak ada detail penyaluran.</TableCell></TableRow>
+                    ) : (
+                      report.detailPenyaluran.map((item: any) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <div className="font-medium">{item.nama_lengkap}</div>
+                            <div className="text-xs text-slate-500">{item.nik}</div>
+                          </TableCell>
+                          <TableCell>{item.jenis_bantuan}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(item.nominal_bantuan)}</TableCell>
+                          <TableCell className="text-center">
+                            {item.bukti_penyaluran ? (
+                              <a href={item.bukti_penyaluran} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs font-medium inline-flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[14px]">image</span>
+                                Lihat
+                              </a>
+                            ) : (
+                              <span className="text-slate-400 italic text-xs">-</span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))
                     )}

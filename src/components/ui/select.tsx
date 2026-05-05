@@ -122,11 +122,14 @@ function SelectContent({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function SelectValue(_: { placeholder?: React.ReactNode }) {
+function SelectValue(props: { placeholder?: React.ReactNode }) {
+  void props.placeholder
   return null
 }
 
-function SelectItem(_: { value: string; children: React.ReactNode }) {
+function SelectItem(props: { value: string; children: React.ReactNode }) {
+  void props.value
+  void props.children
   return null
 }
 

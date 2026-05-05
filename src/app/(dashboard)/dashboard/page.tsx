@@ -10,8 +10,10 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { FunnelChart } from '@/components/dashboard/FunnelChart';
 import { MonthlyBarChart } from '@/components/dashboard/BarChart';
 import { getPusherClient } from '@/lib/pusher-client';
+import { useSession } from 'next-auth/react';
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const { data: stats, isLoading, isError, mutate } = useDashboardStats();
   const [isRetrying, setIsRetrying] = useState(false);
 
@@ -52,6 +54,36 @@ export default function DashboardPage() {
       toast.error('Terjadi kesalahan saat memproses retry sinkronisasi.');
     } finally {
       setIsRetrying(false);
+    }
+  };
+
+  const handleTambahDana = async () => {
+    const nominalStr = prompt('Masukkan nominal dana yang ingin ditambah (IDR):', '100000000');
+    if (!nominalStr) return;
+
+    const nominal = parseInt(nominalStr.replace(/[^0-9]/g, ''), 10);
+    if (isNaN(nominal) || nominal <= 0) {
+      toast.error('Nominal dana tidak valid.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/pengaturan/anggaran', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nominal }),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        toast.error(result.message || 'Gagal menambah dana.');
+        return;
+      }
+
+      toast.success(`Berhasil menambah dana sebesar Rp ${nominal.toLocaleString('id-ID')}`);
+      void mutate(); // Refresh dashboard data
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat menghubungi server.');
     }
   };
 
@@ -113,9 +145,16 @@ export default function DashboardPage() {
       <Card className="border-border bg-card shadow-sm">
         <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
           <p className="text-sm text-muted-foreground">Jalankan sinkronisasi ulang untuk data DTKS berstatus tertunda.</p>
-          <Button onClick={handleRetrySinkronisasiTertunda} disabled={isRetrying}>
-            {isRetrying ? 'Memproses...' : 'Retry Sinkronisasi Tertunda'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleRetrySinkronisasiTertunda} disabled={isRetrying}>
+              {isRetrying ? 'Memproses...' : 'Retry Sinkronisasi Tertunda'}
+            </Button>
+            {session?.user?.role === 'KEPALA_BIDANG' && (
+              <Button onClick={handleTambahDana}>
+                Tambah Dana
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -139,6 +178,11 @@ export default function DashboardPage() {
           title="Penyaluran Berhasil"
           value={stats.tersalurkan}
           description="Bantuan yang sudah berhasil disalurkan"
+        />
+        <StatCard
+          title="Total Anggaran"
+          value={formatCurrency(stats.total_anggaran || 3000000000)}
+          description="Pagu anggaran tahun berjalan"
         />
       </div>
 

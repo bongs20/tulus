@@ -19,15 +19,15 @@ export function FormUploadFoto({ initialData, onNext, onBack, isLoading }: FormU
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>(initialData.url_foto || []);
   const maxFiles = 5;
 
-  const handleUploadComplete = (res: Array<{ serverData?: { fileUrl?: string; uploadedBy?: string } }>) => {
+  const handleUploadComplete = (res: Array<{ url: string; serverData?: { fileUrl?: string; uploadedBy?: string } }>) => {
     console.log('handleUploadComplete', res);
     if (res && res.length > 0) {
       const newUrls = res
-        .map((r) => r.serverData?.fileUrl)
+        .map((r) => r.url || r.serverData?.fileUrl)
         .filter((url): url is string => Boolean(url));
       if (newUrls.length === 0) {
-        console.warn('No fileUrl returned from server in upload response', res);
-        toast.warning('Unggahan selesai tapi URL file tidak diterima. Periksa console.');
+        console.warn('No fileUrl or url returned from server in upload response', res);
+        toast.warning('Unggahan selesai tapi URL file tidak ditemukan. Periksa console.');
       }
       setUploadedImageUrls((prevUrls) => {
         const combined = [...prevUrls, ...newUrls];

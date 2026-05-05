@@ -19,9 +19,10 @@ export async function mockDtksSync(personData: DtksPersonData): Promise<DtksSync
     throw new Error("DTKS service unavailable (dummy)");
   }
 
-  const lastNikDigit = Number.parseInt(personData.nik.slice(-1), 10);
-  const desilBase = Number.isNaN(lastNikDigit) ? 1 : (lastNikDigit % 10) + 1;
-  const isMatch = Number.isNaN(lastNikDigit) ? false : lastNikDigit % 2 === 0;
+  // Khusus untuk Muhammad Syaiful (NIK 111111), pastikan selalu MATCH sesuai permintaan user
+  const isSyaiful = personData.nik === "111111";
+  const isMatch = isSyaiful ? true : Math.random() > 0.2; 
+  const desilBase = isSyaiful ? 1 : Math.floor(Math.random() * 10) + 1; // Desil 1 untuk Syaiful
 
   return {
     status: isMatch ? "MATCH" : "MISMATCH",

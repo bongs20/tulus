@@ -1,20 +1,20 @@
 // prisma/seed.ts
 import { JenisKelamin, PrismaClient, StatusDtks, StatusSinkronisasi, StatusVerifikasi } from '@prisma/client';
 import { hash } from 'bcryptjs';
-import { createCipheriv, randomBytes, scryptSync } from 'crypto';
+import { createCipheriv, createHash, scryptSync } from 'crypto';
 
 const prisma = new PrismaClient();
 const algorithm = 'aes-256-gcm';
 const ivLength = 16;
 const salt = process.env.ENCRYPTION_SALT || 'tulus_encryption_salt';
 const key = scryptSync(process.env.ENCRYPTION_KEY || 'default_encryption_key', salt, 32);
+const staticIv = createHash('sha256').update(key).digest().subarray(0, ivLength);
 
 function encrypt(text: string): Buffer {
-  const iv = randomBytes(ivLength);
-  const cipher = createCipheriv(algorithm, key, iv);
+  const cipher = createCipheriv(algorithm, key, staticIv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
-  return Buffer.concat([iv, tag, encrypted]);
+  return Buffer.concat([staticIv, tag, encrypted]);
 }
 
 async function main() {

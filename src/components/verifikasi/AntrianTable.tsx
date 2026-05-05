@@ -35,7 +35,6 @@ export function AntrianTable({ onRowClick, selectedPenerimaId }: AntrianTablePro
   const limit = 10; // Items per page
 
   const { data: penerimaList, total, isLoading, mutate } = usePenerima({
-    status: 'MATCH', // Only show penerima with status MATCH
     search: debouncedSearchTerm,
     page: currentPage,
     limit,
@@ -73,7 +72,7 @@ export function AntrianTable({ onRowClick, selectedPenerimaId }: AntrianTablePro
   return (
     <Card className="h-full border-border/70 shadow-sm">
       <CardHeader className="bg-secondary/50 border-b">
-        <CardTitle className="text-base text-primary">Daftar Antrian MATCH</CardTitle>
+        <CardTitle className="text-base text-primary">Daftar Semua Antrian</CardTitle>
         <div className="relative mt-2">
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input

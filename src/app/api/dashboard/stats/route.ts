@@ -1,6 +1,6 @@
 // src/app/api/dashboard/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, StatusVerifikasi, StatusPenyaluran, JenisBantuan } from '@prisma/client';
+import { PrismaClient, StatusVerifikasi, StatusPenyaluran } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { applyRateLimiter } from '@/lib/rate-limiter';
@@ -20,12 +20,12 @@ async function checkRole(req: NextRequest, allowedRoles: string[]) {
 }
 
 export async function GET(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const authCheck = await checkRole(req, ['ADMINISTRATOR', 'KEPALA_BIDANG']);
+  const authCheck = await checkRole(req, ['ADMINISTRATOR', 'KEPALA_BIDANG', 'PETUGAS_VERIFIKATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });
   }
@@ -108,6 +108,22 @@ export async function GET(req: NextRequest) {
       { name: 'Tersalurkan', value: tersalurkan },
     ];
 
+    // Calculate total distributed amount for budget subtraction
+    const total_distributed_aggregate = await prisma.tbl_penyaluran.aggregate({
+      where: { status_penyaluran: StatusPenyaluran.BERHASIL },
+      _sum: {
+        nominal_bantuan: true,
+      },
+    });
+    const total_distributed = toSafeNumber(total_distributed_aggregate._sum.nominal_bantuan);
+    
+    // Fetch budget from settings
+    const settings = await prisma.tbl_pengaturan.findUnique({
+      where: { id: 'global_settings' },
+    });
+    const initial_budget = toSafeNumber(settings?.total_anggaran || 3000000000);
+    const remaining_budget = initial_budget - total_distributed;
+
     // Recent data table (last 10 entries of successful penyaluran)
     const recent_penyaluran = await prisma.tbl_penyaluran.findMany({
       where: { status_penyaluran: StatusPenyaluran.BERHASIL },
@@ -136,6 +152,7 @@ export async function GET(req: NextRequest) {
       lolos_awal,
       disetujui,
       tersalurkan,
+      total_anggaran: remaining_budget,
       per_program,
       monthly_trend: formattedMonthlyTrend,
       funnel_data,
