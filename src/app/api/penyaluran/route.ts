@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     // BR-007: Penyaluran only for penerima with status DISETUJUI
     const penerima = await prisma.tbl_penerima.findUnique({
       where: { id: id_penerima },
-      select: { status_verifikasi: true, nama_lengkap: true },
+      select: { status_verifikasi: true, nama_lengkap: true, nomor_telepon: true },
     });
 
     if (!penerima || penerima.status_verifikasi !== StatusVerifikasi.DISETUJUI) {
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
     // Mock external bank API (always success after 2s for this prototype)
     setTimeout(async () => {
-      const isSuccess = true; // Changed from random to always true for reliability
+      const isSuccess = true;
       const finalStatus = StatusPenyaluran.BERHASIL;
       const finalCatatan = catatan || 'Penyaluran berhasil diproses oleh bank.';
 
@@ -94,6 +94,13 @@ export async function POST(req: NextRequest) {
           catatan: finalCatatan,
         },
       });
+
+      // Send WhatsApp Notification to Citizen
+      const { sendWhatsappNotification } = await import('@/lib/fonnte');
+      if (penerima.nomor_telepon && penerima.nomor_telepon !== '0') {
+        const message = `Halo ${penerima.nama_lengkap}, dana bantuan ${jenis_bantuan} sebesar Rp ${new Intl.NumberFormat('id-ID').format(Number(nominal_bantuan))} telah BERHASIL disalurkan melalui ${metode_penyaluran}. Silakan cek rekening atau tempat pengambilan Anda. Terima kasih.`;
+        await sendWhatsappNotification(penerima.nomor_telepon, message);
+      }
 
       await writeAuditLog({
         userId: userId!,
