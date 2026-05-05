@@ -9,15 +9,15 @@ const key = scryptSync(process.env.ENCRYPTION_KEY || 'default_encryption_key', s
 // Derive a deterministic, static IV from the key. This is crucial for lookup capabilities.
 const iv = createHash('sha256').update(key).digest().subarray(0, ivLength);
 
-export function encrypt(text: string): string {
+export function encrypt(text: string): Buffer {
   if (!process.env.ENCRYPTION_KEY) {
     console.warn("ENCRYPTION_KEY is not set. Data will not be truly encrypted.");
   }
   const cipher = createCipheriv(algorithm, key, iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
-  // Prepend the static IV and tag, then convert to hex string for DB storage
-  return Buffer.concat([iv, tag, encrypted]).toString('hex');
+  // Prepend the static IV and tag, then return as Buffer for Prisma Bytes compatibility
+  return Buffer.concat([iv, tag, encrypted]);
 }
 
 export function decrypt(encryptedData: string | Buffer | Uint8Array): string {
@@ -29,7 +29,6 @@ export function decrypt(encryptedData: string | Buffer | Uint8Array): string {
       ? Buffer.from(encryptedData, 'hex') 
       : Buffer.from(encryptedData);
       
-    // The IV is extracted but it will always be the same static IV.
     const receivedIv = buffer.subarray(0, ivLength);
     const tag = buffer.subarray(ivLength, ivLength + 16);
     const encryptedText = buffer.subarray(ivLength + 16);
