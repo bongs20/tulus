@@ -155,15 +155,17 @@ model tbl_audit_log {
 
 // Complaint model
 model tbl_sanggahan {
-  id               String          @id @default(uuid())
-  id_penerima      String
-  nama_pengaju     String
-  isi_sanggahan    String
-  nomor_telepon    String?
-  tanggal_sanggahan DateTime       @default(now())
-  status_sanggahan StatusSanggahan @default(PENDING)
+  id                String          @id @default(uuid())
+  id_penerima       String?
+  nik_pengaju       String?         // NIK for unregistered citizens appealing
+  nama_pengaju      String
+  nomor_telepon     String?
+  isi_sanggahan     String
+  status_sanggahan  StatusSanggahan @default(PENDING)
+  tanggal_sanggahan DateTime        @default(now())
+  keterangan_admin  String?
 
-  penerima         tbl_penerima    @relation(fields: [id_penerima], references: [id])
+  penerima tbl_penerima? @relation(fields: [id_penerima], references: [id])
 }
 
 enum StatusSanggahan {

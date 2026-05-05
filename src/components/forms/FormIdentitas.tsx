@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { SanggahanFormModal } from '@/components/shared/SanggahanFormModal';
 
 type IdentitasFormValues = z.infer<typeof identitasSchema>;
 
@@ -43,10 +44,9 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
   const [nikCheckLoading, setNikCheckLoading] = useState(false);
   const [nikDuplicateError, setNikDuplicateError] = useState<string | null>(null);
 
-  // Function to simulate NIK validation (format + duplicate check via API)
   const validateNik = async (nik: string) => {
     if (nik.length !== 16 || !/^\d+$/.test(nik)) {
-      setNikDuplicateError(null); // Clear previous error if format is wrong
+      setNikDuplicateError(null);
       return;
     }
 
@@ -54,14 +54,11 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
     setNikDuplicateError(null);
 
     try {
-      // Simulate API call to check NIK uniqueness/validity
       const response = await fetch(`/api/validate-nik?nik=${nik}`);
-      
       let data: { isDuplicate?: boolean; message?: string };
       try {
         data = await response.json();
       } catch (e) {
-        console.error('Failed to parse NIK validation response as JSON:', e);
         throw new Error('Server returned an invalid response.');
       }
 
@@ -74,7 +71,6 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
       console.error('NIK validation error:', error);
       const message = error instanceof Error ? error.message : 'Terjadi kesalahan saat memeriksa NIK.';
       setNikDuplicateError(message);
-      toast.error(message);
     } finally {
       setNikCheckLoading(false);
     }
@@ -109,7 +105,16 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
                 />
               </FormControl>
               {nikCheckLoading && <FormDescription>Memeriksa NIK...</FormDescription>}
-              {nikDuplicateError && <FormMessage>{nikDuplicateError}</FormMessage>}
+              {nikDuplicateError && (
+                <div className="flex flex-col gap-2 mt-1">
+                  <FormMessage>{nikDuplicateError}</FormMessage>
+                  <SanggahanFormModal nik_pengaju={field.value} nama_pengaju={form.getValues('nama_lengkap') || 'Warga'}>
+                    <Button type="button" variant="link" className="h-auto p-0 text-xs text-blue-700 underline justify-start text-left whitespace-normal">
+                      NIK bermasalah atau tidak ditemukan? Klik di sini untuk mengajukan Sanggahan/Banding
+                    </Button>
+                  </SanggahanFormModal>
+                </div>
+              )}
               <FormMessage>{form.formState.errors.nik?.message}</FormMessage>
             </FormItem>
           )}

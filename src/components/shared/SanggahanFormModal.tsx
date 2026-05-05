@@ -23,16 +23,18 @@ const sanggahanSchema = z.object({
   nama_pengaju: z.string().min(1, { message: 'Nama tidak boleh kosong.' }),
   nomor_telepon: z.string().optional(),
   isi_sanggahan: z.string().min(10, { message: 'Sanggahan terlalu pendek.' }),
+  nik_pengaju: z.string().optional(),
 });
 
 type SanggahanFormValues = z.infer<typeof sanggahanSchema>;
 
 interface SanggahanFormModalProps {
-  id_penerima: string;
+  id_penerima?: string;
+  nik_pengaju?: string;
   children: React.ReactNode;
 }
 
-export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModalProps) {
+export function SanggahanFormModal({ id_penerima, nik_pengaju, children }: SanggahanFormModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,7 +55,7 @@ export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModal
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...values, id_penerima }),
+        body: JSON.stringify({ ...values, id_penerima, nik_pengaju: values.nik_pengaju || nik_pengaju }),
       });
 
       if (response.ok) {

@@ -10,10 +10,11 @@ import { authOptions } from '@/lib/auth';
 import { Prisma, StatusSanggahan } from '@prisma/client';
 
 const sanggahanSchema = z.object({
-  id_penerima: z.string().uuid({ message: 'ID Penerima tidak valid.' }),
+  id_penerima: z.string().uuid({ message: 'ID Penerima tidak valid.' }).optional().nullable(),
+  nik_pengaju: z.string().optional().nullable(),
   nama_pengaju: z.string().min(1, { message: 'Nama pengaju tidak boleh kosong.' }),
   isi_sanggahan: z.string().min(10, { message: 'Isi sanggahan terlalu pendek.' }),
-  nomor_telepon: z.string().optional(),
+  nomor_telepon: z.string().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -27,22 +28,23 @@ export async function POST(req: NextRequest) {
     const validatedData = sanggahanSchema.parse(body);
     const sanitizedData = sanitizeObject(validatedData);
 
-    // Verify if id_penerima exists
-    const penerima = await prisma.tbl_penerima.findUnique({
-      where: { id: sanitizedData.id_penerima },
-      select: { id: true, status_verifikasi: true },
-    });
-
-    if (!penerima) {
-      return NextResponse.json({ message: 'Penerima tidak ditemukan.' }, { status: 404 });
+    // If id_penerima is provided, verify it
+    if (sanitizedData.id_penerima) {
+      const penerima = await prisma.tbl_penerima.findUnique({
+        where: { id: sanitizedData.id_penerima },
+      });
+      if (!penerima) {
+        return NextResponse.json({ message: 'Penerima tidak ditemukan.' }, { status: 404 });
+      }
     }
 
     const newSanggahan = await prisma.tbl_sanggahan.create({
       data: {
-        id_penerima: sanitizedData.id_penerima,
+        id_penerima: sanitizedData.id_penerima || null,
+        nik_pengaju: sanitizedData.nik_pengaju || null,
         nama_pengaju: sanitizedData.nama_pengaju,
         isi_sanggahan: sanitizedData.isi_sanggahan,
-        nomor_telepon: sanitizedData.nomor_telepon,
+        nomor_telepon: sanitizedData.nomor_telepon || null,
         tanggal_sanggahan: new Date(),
         status_sanggahan: 'PENDING',
       },
