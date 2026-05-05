@@ -119,8 +119,7 @@ export async function POST(req: NextRequest) {
       dtksResult = await mockDtksSync({ nik, nama: penerimaData.nama_lengkap, tanggal_lahir: new Date(penerimaData.tanggal_lahir) });
     } catch (e) { console.warn('Sync failed'); }
 
-    const isSyncFailed = !dtksResult;
-    const statusVerifikasi = isSyncFailed ? 'MENUNGGU' : dtksResult.status === 'MATCH' ? 'MATCH' : 'MISMATCH';
+    const statusVerifikasi = !dtksResult ? 'MENUNGGU' : dtksResult.status === 'MATCH' ? 'MATCH' : 'MISMATCH';
 
     const newPenerima = await prisma.$transaction(async (tx) => {
       const p = await tx.tbl_penerima.create({
@@ -147,7 +146,7 @@ export async function POST(req: NextRequest) {
           nik: encryptedNik,
           nilai_desil: dtksResult?.desil ?? warga.nilai_kesejahteraan,
           sumber_data: 'PENDAFTARAN MANDIRI',
-          status_sinkronisasi: isSyncFailed ? 'TERTUNDA' : dtksResult.status === 'MATCH' ? 'MATCH' : 'MISMATCH',
+          status_sinkronisasi: !dtksResult ? 'TERTUNDA' : dtksResult.status === 'MATCH' ? 'MATCH' : 'MISMATCH',
           tanggal_sinkronisasi: new Date(),
         },
       });
