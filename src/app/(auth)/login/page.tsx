@@ -39,17 +39,17 @@ function LoginForm() {
     if (session?.user) {
       toast.success('Login Berhasil!');
       if (session.user.role === 'PETUGAS_VERIFIKATOR') {
-        router.push('/antrian');
+        window.location.href = '/antrian';
       } else {
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       }
     } else {
       // Fallback if session is not immediately available
       const callbackUrl = searchParams.get('callbackUrl');
       if (callbackUrl && !callbackUrl.includes('/login')) {
-        router.push(callbackUrl);
+        window.location.href = callbackUrl;
       } else {
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       }
     }
   };
