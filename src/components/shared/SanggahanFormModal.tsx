@@ -31,17 +31,18 @@ type SanggahanFormValues = z.infer<typeof sanggahanSchema>;
 interface SanggahanFormModalProps {
   id_penerima?: string;
   nik_pengaju?: string;
+  nama_pengaju?: string;
   children: React.ReactNode;
 }
 
-export function SanggahanFormModal({ id_penerima, nik_pengaju, children }: SanggahanFormModalProps) {
+export function SanggahanFormModal({ id_penerima, nik_pengaju, nama_pengaju, children }: SanggahanFormModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<SanggahanFormValues>({
     resolver: zodResolver(sanggahanSchema),
     defaultValues: {
-      nama_pengaju: '',
+      nama_pengaju: nama_pengaju || '',
       nomor_telepon: '',
       isi_sanggahan: '',
     },
