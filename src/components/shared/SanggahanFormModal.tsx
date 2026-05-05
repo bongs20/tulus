@@ -77,8 +77,8 @@ export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModal
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Ajukan Sanggahan / Banding</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-slate-900">Ajukan Sanggahan / Banding</DialogTitle>
+          <DialogDescription className="text-slate-600">
             Gunakan formulir ini untuk melaporkan ketidaksesuaian data (Sanggahan) atau mengajukan keberatan atas status Anda sendiri (Banding).
           </DialogDescription>
         </DialogHeader>
@@ -89,9 +89,9 @@ export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModal
               name="nama_pengaju"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nama Anda</FormLabel>
+                  <FormLabel className="text-slate-700">Nama Anda</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nama lengkap pengaju" {...field} disabled={isLoading} />
+                    <Input placeholder="Nama lengkap pengaju" {...field} disabled={isLoading} className="text-slate-900 placeholder:text-slate-400" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -103,11 +103,11 @@ export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModal
               name="nomor_telepon"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nomor WhatsApp (Opsional)</FormLabel>
+                  <FormLabel className="text-slate-700">Nomor WhatsApp (Opsional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Contoh: 08123456789" {...field} disabled={isLoading} />
+                    <Input placeholder="Contoh: 08123456789" {...field} disabled={isLoading} className="text-slate-900 placeholder:text-slate-400" />
                   </FormControl>
-                  <FormDescription className="text-[10px]">
+                  <FormDescription className="text-[10px] text-slate-500">
                     Kami akan mengirimkan notifikasi status sanggahan via WA jika nomor diisi.
                   </FormDescription>
                   <FormMessage />
@@ -120,11 +120,11 @@ export function SanggahanFormModal({ id_penerima, children }: SanggahanFormModal
               name="isi_sanggahan"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Isi Sanggahan</FormLabel>
+                  <FormLabel className="text-slate-700">Isi Sanggahan</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Jelaskan sanggahan Anda secara detail..."
-                      className="resize-none"
+                      className="resize-none text-slate-900 placeholder:text-slate-400"
                       {...field}
                       disabled={isLoading}
                     />
