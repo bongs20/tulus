@@ -157,7 +157,7 @@ model tbl_audit_log {
 model tbl_sanggahan {
   id                String          @id @default(uuid())
   id_penerima       String?
-  nik_pengaju       String?         // NIK for unregistered citizens appealing
+  nik_pengaju       Bytes?         // NIK for unregistered citizens appealing
   nama_pengaju      String
   nomor_telepon     String?
   isi_sanggahan     String

@@ -7,6 +7,7 @@ import { applyRateLimiter } from '@/lib/rate-limiter';
 import { writeAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsappNotification } from '@/lib/fonnte';
+import { decrypt } from '@/lib/crypto';
 
 async function checkRole(req: NextRequest, allowedRoles: string[]) {
   const session = await getServerSession(authOptions);
@@ -59,7 +60,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       // 3. Send WA notification if exists
       if (sanggahan.nomor_telepon) {
-        const targetName = sanggahan.penerima?.nama_lengkap || `NIK: ${sanggahan.nik_pengaju}`;
+        const decryptedNik = sanggahan.nik_pengaju ? decrypt(sanggahan.nik_pengaju) : '';
+        const targetName = sanggahan.penerima?.nama_lengkap || `NIK: ${decryptedNik}`;
         const message = `Halo ${sanggahan.nama_pengaju}, sanggahan/banding Anda untuk ${targetName} telah DITERIMA. Data akan segera ditinjau ulang oleh petugas. Terima kasih.`;
         await sendWhatsappNotification(sanggahan.nomor_telepon, message);
       }
@@ -67,7 +69,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       await writeAuditLog({
         userId: authCheck.user!.id,
         action: 'APPROVE_SANGGAHAN',
-        description: `Menyetujui sanggahan dari ${sanggahan.nama_pengaju} untuk ${sanggahan.penerima?.nama_lengkap || sanggahan.nik_pengaju}`,
+        description: `Menyetujui sanggahan dari ${sanggahan.nama_pengaju} untuk ${sanggahan.penerima?.nama_lengkap || (sanggahan.nik_pengaju ? decrypt(sanggahan.nik_pengaju) : 'N/A')}`,
         note: `Status diproses. Notifikasi WA dikirim ke ${sanggahan.nomor_telepon || 'N/A'}.`,
       });
 
@@ -80,7 +82,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       // Send WA notification if exists
       if (sanggahan.nomor_telepon) {
-        const targetName = sanggahan.penerima?.nama_lengkap || `NIK: ${sanggahan.nik_pengaju}`;
+        const decryptedNik = sanggahan.nik_pengaju ? decrypt(sanggahan.nik_pengaju) : '';
+        const targetName = sanggahan.penerima?.nama_lengkap || `NIK: ${decryptedNik}`;
         const message = `Halo ${sanggahan.nama_pengaju}, mohon maaf sanggahan/banding Anda untuk ${targetName} telah DITOLAK setelah ditinjau oleh petugas. Keputusan ini bersifat final.`;
         await sendWhatsappNotification(sanggahan.nomor_telepon, message);
       }
@@ -88,7 +91,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       await writeAuditLog({
         userId: authCheck.user!.id,
         action: 'REJECT_SANGGAHAN',
-        description: `Menolak sanggahan dari ${sanggahan.nama_pengaju} untuk ${sanggahan.penerima?.nama_lengkap || sanggahan.nik_pengaju}`,
+        description: `Menolak sanggahan dari ${sanggahan.nama_pengaju} untuk ${sanggahan.penerima?.nama_lengkap || (sanggahan.nik_pengaju ? decrypt(sanggahan.nik_pengaju) : 'N/A')}`,
         note: `Notifikasi WA dikirim ke ${sanggahan.nomor_telepon || 'N/A'}.`,
       });
 
