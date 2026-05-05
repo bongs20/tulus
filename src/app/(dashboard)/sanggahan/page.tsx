@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 interface Sanggahan {
   id: string;
   nama_pengaju: string;
+  nik_pengaju: string | null;
   nomor_telepon: string | null;
   isi_sanggahan: string;
   tanggal_sanggahan: string;
@@ -18,7 +19,7 @@ interface Sanggahan {
   penerima: {
     nama_lengkap: string;
     nik: string;
-  };
+  } | null;
 }
 
 export default function SanggahanPage() {
@@ -107,8 +108,17 @@ export default function SanggahanPage() {
                         <div className="text-xs text-muted-foreground">{s.nomor_telepon || 'Tanpa WA'}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-foreground">{s.penerima.nama_lengkap}</div>
-                        <div className="text-[10px] text-muted-foreground">{s.penerima.nik}</div>
+                        {s.penerima ? (
+                          <>
+                            <div className="text-sm font-medium text-foreground">{s.penerima.nama_lengkap}</div>
+                            <div className="text-[10px] text-muted-foreground">{s.penerima.nik}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-sm font-medium text-blue-700 italic">Banding Mandiri</div>
+                            <div className="text-[10px] text-muted-foreground">NIK: {s.nik_pengaju}</div>
+                          </>
+                        )}
                       </td>
                       <td className="px-6 py-4 max-w-xs">
                         <p className="text-sm text-foreground line-clamp-2">{s.isi_sanggahan}</p>
