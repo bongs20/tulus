@@ -49,26 +49,29 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         data: { status_sanggahan: StatusSanggahan.SELESAI },
       });
 
-      // 2. Reset penerima status to MATCH so it can be re-verified
-      await prisma.tbl_penerima.update({
-        where: { id: sanggahan.id_penerima },
-        data: { status_verifikasi: StatusVerifikasi.MATCH },
-      });
+      // 2. Reset penerima status to MATCH so it can be re-verified (only if it exists)
+      if (sanggahan.id_penerima) {
+        await prisma.tbl_penerima.update({
+          where: { id: sanggahan.id_penerima },
+          data: { status_verifikasi: StatusVerifikasi.MATCH },
+        });
+      }
 
       // 3. Send WA notification if exists
       if (sanggahan.nomor_telepon) {
-        const message = `Halo ${sanggahan.nama_pengaju}, sanggahan/banding Anda untuk ${sanggahan.penerima.nama_lengkap} telah DITERIMA. Data akan segera diverifikasi ulang oleh petugas. Terima kasih.`;
+        const targetName = sanggahan.penerima?.nama_lengkap || `NIK: ${sanggahan.nik_pengaju}`;
+        const message = `Halo ${sanggahan.nama_pengaju}, sanggahan/banding Anda untuk ${targetName} telah DITERIMA. Data akan segera ditinjau ulang oleh petugas. Terima kasih.`;
         await sendWhatsappNotification(sanggahan.nomor_telepon, message);
       }
 
       await writeAuditLog({
         userId: authCheck.user!.id,
         action: 'APPROVE_SANGGAHAN',
-        description: `Menyetujui sanggahan dari ${sanggahan.nama_pengaju} untuk penerima ${sanggahan.penerima.nama_lengkap}`,
-        note: `Status penerima dikembalikan ke MATCH. Notifikasi WA dikirim ke ${sanggahan.nomor_telepon || 'N/A'}.`,
+        description: `Menyetujui sanggahan dari ${sanggahan.nama_pengaju} untuk ${sanggahan.penerima?.nama_lengkap || sanggahan.nik_pengaju}`,
+        note: `Status diproses. Notifikasi WA dikirim ke ${sanggahan.nomor_telepon || 'N/A'}.`,
       });
 
-      return NextResponse.json({ message: 'Sanggahan disetujui. Status penerima dikembalikan ke MATCH.' });
+      return NextResponse.json({ message: 'Sanggahan disetujui.' });
     } else if (action === 'REJECT') {
       await prisma.tbl_sanggahan.update({
         where: { id: sanggahanId },
@@ -77,14 +80,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       // Send WA notification if exists
       if (sanggahan.nomor_telepon) {
-        const message = `Halo ${sanggahan.nama_pengaju}, mohon maaf sanggahan/banding Anda untuk ${sanggahan.penerima.nama_lengkap} telah DITOLAK setelah ditinjau oleh petugas. Keputusan ini bersifat final.`;
+        const targetName = sanggahan.penerima?.nama_lengkap || `NIK: ${sanggahan.nik_pengaju}`;
+        const message = `Halo ${sanggahan.nama_pengaju}, mohon maaf sanggahan/banding Anda untuk ${targetName} telah DITOLAK setelah ditinjau oleh petugas. Keputusan ini bersifat final.`;
         await sendWhatsappNotification(sanggahan.nomor_telepon, message);
       }
 
       await writeAuditLog({
         userId: authCheck.user!.id,
         action: 'REJECT_SANGGAHAN',
-        description: `Menolak sanggahan dari ${sanggahan.nama_pengaju} untuk penerima ${sanggahan.penerima.nama_lengkap}`,
+        description: `Menolak sanggahan dari ${sanggahan.nama_pengaju} untuk ${sanggahan.penerima?.nama_lengkap || sanggahan.nik_pengaju}`,
         note: `Notifikasi WA dikirim ke ${sanggahan.nomor_telepon || 'N/A'}.`,
       });
 
