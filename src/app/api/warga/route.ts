@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { decrypt } from '@/lib/crypto';
+import { encrypt, decrypt } from '@/lib/crypto';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
