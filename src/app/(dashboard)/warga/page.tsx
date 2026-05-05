@@ -7,6 +7,23 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Warga {
   id: string;
@@ -23,6 +40,18 @@ export default function WargaRegistryPage() {
   const [warga, setWarga] = useState<Warga[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form states
+  const [newWarga, setNewWarga] = useState({
+    nik: '',
+    nama_lengkap: '',
+    alamat: '',
+    wilayah: 'Panakkukang',
+    status_dtks: 'BELUM_TERDAFTAR',
+    nilai_kesejahteraan: '1',
+  });
 
   useEffect(() => {
     fetchWarga();
@@ -45,6 +74,39 @@ export default function WargaRegistryPage() {
     }
   };
 
+  const handleAddWarga = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/warga', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newWarga),
+      });
+
+      if (response.ok) {
+        toast.success('Data warga berhasil ditambahkan!');
+        setIsModalOpen(false);
+        setNewWarga({
+          nik: '',
+          nama_lengkap: '',
+          alamat: '',
+          wilayah: 'Panakkukang',
+          status_dtks: 'BELUM_TERDAFTAR',
+          nilai_kesejahteraan: '1',
+        });
+        fetchWarga();
+      } else {
+        const err = await response.json();
+        toast.error(err.message || 'Gagal menambah data');
+      }
+    } catch (error) {
+      toast.error('Terjadi kesalahan server');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const filteredWarga = warga.filter(w => 
     w.nama_lengkap.toLowerCase().includes(search.toLowerCase()) ||
     w.nik.includes(search) ||
@@ -55,10 +117,95 @@ export default function WargaRegistryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Master Data Warga (Registry)</h1>
-        <Button onClick={fetchWarga} variant="outline" size="sm">
-          <span className="material-symbols-outlined mr-2">refresh</span>
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={fetchWarga} variant="outline" size="sm">
+            <span className="material-symbols-outlined mr-2">refresh</span>
+            Refresh
+          </Button>
+          
+          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="bg-blue-700 hover:bg-blue-800">
+                <span className="material-symbols-outlined mr-2">add</span>
+                Tambah NIK Baru
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Tambah Data Warga Baru</DialogTitle>
+                <DialogDescription>
+                  Masukkan data warga ke Master Registry agar mereka bisa melakukan pendaftaran mandiri.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddWarga} className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="nik">NIK</Label>
+                  <Input 
+                    id="nik" 
+                    placeholder="16 digit NIK" 
+                    value={newWarga.nik} 
+                    onChange={(e) => setNewWarga({...newWarga, nik: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="nama">Nama Lengkap</Label>
+                  <Input 
+                    id="nama" 
+                    placeholder="Nama sesuai KTP" 
+                    value={newWarga.nama_lengkap}
+                    onChange={(e) => setNewWarga({...newWarga, nama_lengkap: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="wilayah">Wilayah/Kecamatan</Label>
+                    <Select value={newWarga.wilayah} onValueChange={(val) => setNewWarga({...newWarga, wilayah: val})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih wilayah" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Panakkukang">Panakkukang</SelectItem>
+                        <SelectItem value="Rappocini">Rappocini</SelectItem>
+                        <SelectItem value="Biringkanaya">Biringkanaya</SelectItem>
+                        <SelectItem value="Tamalanrea">Tamalanrea</SelectItem>
+                        <SelectItem value="Tamalate">Tamalate</SelectItem>
+                        <SelectItem value="Manggala">Manggala</SelectItem>
+                        <SelectItem value="Tallo">Tallo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="skor">Skor Kesejahteraan (1-10)</Label>
+                    <Input 
+                      id="skor" 
+                      type="number" 
+                      min="1" 
+                      max="10" 
+                      value={newWarga.nilai_kesejahteraan}
+                      onChange={(e) => setNewWarga({...newWarga, nilai_kesejahteraan: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="alamat">Alamat Lengkap</Label>
+                  <Input 
+                    id="alamat" 
+                    placeholder="Jl. Nama Jalan No. XX" 
+                    value={newWarga.alamat}
+                    onChange={(e) => setNewWarga({...newWarga, alamat: e.target.value})}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Menyimpan...' : 'Simpan Data'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
