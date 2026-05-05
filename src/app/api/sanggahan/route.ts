@@ -7,7 +7,7 @@ import { applyRateLimiter } from '@/lib/rate-limiter';
 import { sanitizeObject } from '@/lib/sanitizer';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { Prisma } from '@prisma/client';
+import { Prisma, StatusSanggahan } from '@prisma/client';
 
 const sanggahanSchema = z.object({
   id_penerima: z.string().uuid({ message: 'ID Penerima tidak valid.' }),
