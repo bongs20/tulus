@@ -19,38 +19,16 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const callbackUrl = searchParams.get('callbackUrl') || undefined;
     const result = await signIn('credentials', {
-      redirect: false,
+      redirect: true,
       username,
       password,
-      callbackUrl,
+      callbackUrl: '/dashboard',
     });
-    setIsLoading(false);
 
     if (result?.error) {
+      setIsLoading(false);
       toast.error(`Login Gagal: ${result.error}`);
-      return;
-    }
-
-    // After successful login, fetch session to get role and redirect accordingly
-    const session = await getSession();
-    
-    if (session?.user) {
-      toast.success('Login Berhasil!');
-      if (session.user.role === 'PETUGAS_VERIFIKATOR') {
-        window.location.href = '/antrian';
-      } else {
-        window.location.href = '/dashboard';
-      }
-    } else {
-      // Fallback if session is not immediately available
-      const callbackUrl = searchParams.get('callbackUrl');
-      if (callbackUrl && !callbackUrl.includes('/login')) {
-        window.location.href = callbackUrl;
-      } else {
-        window.location.href = '/dashboard';
-      }
     }
   };
 
