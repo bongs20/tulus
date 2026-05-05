@@ -8,6 +8,7 @@ import { sanitizeObject } from '@/lib/sanitizer';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { Prisma, StatusSanggahan } from '@prisma/client';
+import { encrypt, decrypt } from '@/lib/crypto';
 
 const sanggahanSchema = z.object({
   id_penerima: z.string().uuid({ message: 'ID Penerima tidak valid.' }).optional().nullable(),
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     const newSanggahan = await prisma.tbl_sanggahan.create({
       data: {
         id_penerima: sanitizedData.id_penerima || null,
-        nik_pengaju: sanitizedData.nik_pengaju || null,
+        nik_pengaju: sanitizedData.nik_pengaju ? encrypt(sanitizedData.nik_pengaju) : null,
         nama_pengaju: sanitizedData.nama_pengaju,
         isi_sanggahan: sanitizedData.isi_sanggahan,
         nomor_telepon: sanitizedData.nomor_telepon || null,
@@ -88,7 +89,16 @@ export async function GET(req: NextRequest) {
       orderBy: { tanggal_sanggahan: 'desc' },
     });
 
-    return NextResponse.json(sanggahanList);
+    const processedSanggahan = sanggahanList.map(s => ({
+      ...s,
+      nik_pengaju: s.nik_pengaju ? decrypt(s.nik_pengaju) : null,
+      penerima: s.penerima ? {
+        ...s.penerima,
+        nik: decrypt(s.penerima.nik)
+      } : null
+    }));
+
+    return NextResponse.json(processedSanggahan);
   } catch (error) {
     console.error('Error fetching sanggahan list:', error);
     return NextResponse.json({ message: 'Terjadi kesalahan pada server.' }, { status: 500 });
