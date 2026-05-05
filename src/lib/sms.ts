@@ -5,15 +5,14 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
-const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
-
 export async function sendSms(to: string, message: string) {
-  if (!client || !twilioPhoneNumber) {
+  if (!accountSid || !authToken || !twilioPhoneNumber || !accountSid.startsWith('AC')) {
     console.warn("Twilio credentials not configured. Skipping SMS sending.");
     return { success: false, message: "Twilio not configured." };
   }
 
   try {
+    const client = twilio(accountSid, authToken);
     const response = await client.messages.create({
       body: message,
       from: twilioPhoneNumber,

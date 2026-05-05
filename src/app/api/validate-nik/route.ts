@@ -1,7 +1,7 @@
 // src/app/api/validate-nik/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { encrypt } from '@/lib/crypto';
+import { decrypt } from '@/lib/crypto';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 
 const prisma = new PrismaClient();
@@ -20,13 +20,19 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const encryptedNik = encrypt(nik); // Encrypt NIK before lookup
-    // Check if NIK already exists in tbl_penerima
-    const existingPenerima = await prisma.tbl_penerima.findUnique({
-      where: { nik: encryptedNik },
+    const existingPenerima = await prisma.tbl_penerima.findMany({
+      select: { id: true, nik: true },
     });
 
-    if (existingPenerima) {
+    const isDuplicate = existingPenerima.some((penerima) => {
+      try {
+        return decrypt(penerima.nik) === nik;
+      } catch {
+        return false;
+      }
+    });
+
+    if (isDuplicate) {
       return NextResponse.json({ isDuplicate: true, message: 'NIK sudah terdaftar.' }, { status: 200 });
     } else {
       return NextResponse.json({ isDuplicate: false, message: 'NIK tersedia.' }, { status: 200 });

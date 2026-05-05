@@ -79,7 +79,7 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
       }
     });
     return () => subscription.unsubscribe();
-  }, [form.watch]);
+  }, [form]);
 
   const onSubmit = (data: IdentitasFormValues) => {
     if (nikDuplicateError || nikCheckLoading) {
@@ -91,7 +91,7 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 rounded-lg border border-border bg-white p-4">
         <FormField
           control={form.control}
           name="nik"
@@ -153,7 +153,7 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
                     selected={field.value}
@@ -240,7 +240,7 @@ export function FormIdentitas({ initialData, onNext, isLoading }: FormIdentitasP
           )}
         />
 
-        <Button type="submit" disabled={isLoading || nikCheckLoading}>
+        <Button type="submit" className="bg-primary hover:bg-[#194fb2]" disabled={isLoading || nikCheckLoading}>
           Lanjutkan
         </Button>
       </form>

@@ -1,14 +1,14 @@
 // src/app/api/penerima/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, JenisKelamin, StatusVerifikasi } from '@prisma/client';
+import { PrismaClient, StatusVerifikasi } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { encrypt, decrypt } from '@/lib/crypto';
-import { identitasSchema } from '@/lib/validators'; // Use existing schema for validation
 import { z } from 'zod';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 import { sanitizeObject } from '@/lib/sanitizer';
+import { createPenerimaSchema } from '@/lib/validators';
 
 const prisma = new PrismaClient();
 
@@ -24,7 +24,7 @@ async function checkRole(req: NextRequest, allowedRoles: string[]) {
 }
 
 export async function GET(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -44,7 +44,10 @@ export async function GET(req: NextRequest) {
 
   const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const where: {
+    status_verifikasi?: StatusVerifikasi;
+    OR?: { nama_lengkap: { contains: string; mode: 'insensitive' } }[];
+  } = {};
   if (status) where.status_verifikasi = status;
   if (search) {
     // Search encrypted NIK (will require decryption for comparison) or unencrypted nama_lengkap
@@ -99,12 +102,12 @@ export async function GET(req: NextRequest) {
 // POST endpoint for creating new penerima.
 // This is typically called after the 4-step form is completed.
 export async function POST(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const authCheck = await checkRole(req, ['ADMINISTRATOR', 'PETUGAS_VERIFIKATOR']);
+  const authCheck = await checkRole(req, ['ADMINISTRATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });
   }
@@ -113,9 +116,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const sanitizedBody = sanitizeObject(body);
-    // Validate using the identitasSchema, but it's for form, not direct API input.
-    // Need to ensure the full expected data structure is present.
-    // For simplicity, I'll manually check required fields for now.
+    const parsed = createPenerimaSchema.parse({
+      ...sanitizedBody,
+      url_foto: Array.isArray(sanitizedBody.url_foto)
+        ? sanitizedBody.url_foto
+        : Array.isArray(sanitizedBody.url_fotos)
+          ? sanitizedBody.url_fotos
+          : [],
+    });
+
     const {
       nik,
       nama_lengkap,
@@ -127,23 +136,24 @@ export async function POST(req: NextRequest) {
       jenis_pekerjaan,
       status_kepemilikan_rumah,
       keterangan_ekonomi,
-      url_fotos, // Array of URLs from FormUploadFoto
-    } = sanitizedBody;
-
-    // Basic validation
-    if (!nik || !nama_lengkap || !tanggal_lahir || !jenis_kelamin || !alamat || !nomor_telepon || !jumlah_anggota_keluarga) {
-      return NextResponse.json({ message: 'Data identitas tidak lengkap.' }, { status: 400 });
-    }
+      url_foto,
+    } = parsed;
 
     // Encrypt sensitive fields
     const encryptedNik = encrypt(nik);
-    const encryptedFotoUrls = url_fotos ? url_fotos.map((url: string) => encrypt(url)) : [];
+    const encryptedFotoUrls = url_foto.map((url: string) => encrypt(url));
 
-    // Check for duplicate NIK before creating (with encryption)
-    const existingPenerima = await prisma.tbl_penerima.findUnique({
-      where: { nik: encryptedNik },
+    const existingPenerima = await prisma.tbl_penerima.findMany({
+      select: { id: true, nik: true },
     });
-    if (existingPenerima) {
+    const duplicateNik = existingPenerima.some((penerima) => {
+      try {
+        return decrypt(penerima.nik) === nik;
+      } catch {
+        return false;
+      }
+    });
+    if (duplicateNik) {
       return NextResponse.json({ message: 'NIK sudah terdaftar.' }, { status: 409 });
     }
 
@@ -151,14 +161,14 @@ export async function POST(req: NextRequest) {
       data: {
         nik: encryptedNik,
         nama_lengkap,
-        tanggal_lahir: new Date(tanggal_lahir),
+        tanggal_lahir,
         jenis_kelamin,
         alamat,
         nomor_telepon,
         jumlah_anggota_keluarga,
-        jenis_pekerjaan: jenis_pekerjaan || 'Tidak Diketahui',
-        status_kepemilikan_rumah: status_kepemilikan_rumah || 'Tidak Diketahui',
-        keterangan_ekonomi: keterangan_ekonomi || 'Tidak Ada Keterangan',
+        jenis_pekerjaan,
+        status_kepemilikan_rumah,
+        keterangan_ekonomi,
         status_verifikasi: StatusVerifikasi.MENUNGGU,
         fotos: {
           create: encryptedFotoUrls.map((url: Buffer) => ({
@@ -180,7 +190,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error creating penerima:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Validasi input gagal.', errors: error.errors }, { status: 400 });
+      return NextResponse.json({ message: 'Validasi input gagal.', errors: error.issues }, { status: 400 });
     }
     return NextResponse.json({ message: 'Gagal membuat data penerima baru.' }, { status: 500 });
   }

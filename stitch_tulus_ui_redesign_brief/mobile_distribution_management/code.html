@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>TULUS Distribution Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#4e4ec9",
+                        "surface-container-high": "#e7e7f2",
+                        "on-tertiary-fixed-variant": "#7c2e00",
+                        "primary-container": "#1f63db",
+                        "surface-tint": "#0057cf",
+                        "tertiary": "#8e3600",
+                        "tertiary-container": "#b54700",
+                        "surface-variant": "#e1e2ec",
+                        "surface-container-highest": "#e1e2ec",
+                        "on-surface": "#191b23",
+                        "outline-variant": "#c3c6d6",
+                        "on-surface-variant": "#424654",
+                        "on-primary-fixed": "#001946",
+                        "tertiary-fixed": "#ffdbcd",
+                        "on-primary-fixed-variant": "#00419e",
+                        "on-secondary-fixed": "#0a006b",
+                        "outline": "#737785",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#f2f3fd",
+                        "surface-bright": "#faf8ff",
+                        "inverse-surface": "#2e3038",
+                        "secondary-fixed": "#e2dfff",
+                        "on-tertiary-container": "#ffe6dc",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#b1c5ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#191b23",
+                        "inverse-on-surface": "#f0f0fa",
+                        "primary": "#004bb5",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#e6eaff",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#dae2ff",
+                        "secondary-fixed-dim": "#c1c1ff",
+                        "on-tertiary-fixed": "#351000",
+                        "background": "#faf8ff",
+                        "secondary-container": "#8283ff",
+                        "on-secondary-fixed-variant": "#3533b0",
+                        "on-secondary": "#ffffff",
+                        "surface": "#faf8ff",
+                        "tertiary-fixed-dim": "#ffb595",
+                        "on-secondary-container": "#120094",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#d9d9e4",
+                        "inverse-primary": "#b1c5ff",
+                        "surface-container": "#ededf8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "margin": "24px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "gutter": "16px",
+                        "md": "16px",
+                        "xxl": "48px",
+                        "sm": "8px"
+                    },
+                    "fontFamily": {
+                        "sans": ["Public Sans", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "h4": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "h2": ["30px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "h3": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-[#f6f9ff] dark:bg-slate-950 border-b border-[#d7e3f7] dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-primary-container flex items-center justify-center">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a social services field officer in a bright, modern studio setting. The lighting is soft and even, highlighting a friendly yet authoritative expression. The color palette is clean with subtle blue tones in the background, maintaining a corporate and reliable aesthetic consistent with TULUS branding." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATrgCsKWWewJPs_CBlcyb2IMpiwI1xjwm1P7UCp-viTjy7upT96TiyZIMF2u8fIRc_U6hwonlx1bwZbcxpcw6R5G83vUO7YXnxdhny47ncrNiriD4cgGc5nRMxQ3coLqBbTzudjv6oFOHOm2C4tSZ1xh326Sp1_7w1N6GS1r-awaid46n23SgeorXkM7fKD75abKUxjYgJFBhovkFsY8gtp5hoHAaRbDQ5U_rD_GpcOyjreibkLGe90YpfEAVGWkz7xstn0O_77WA"/>
+</div>
+<span class="text-lg font-bold tracking-tighter text-[#1f63db] dark:text-blue-400">TULUS</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-full hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors duration-200">
+<span class="material-symbols-outlined text-[#1f63db] dark:text-blue-400" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 pb-24 px-4 min-h-screen">
+<!-- Search and Filter Section -->
+<div class="mb-6 space-y-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-3 bg-white border border-[#d7e3f7] rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none font-body-md shadow-sm transition-all" placeholder="Cari pesanan, ID, atau penerima..." type="text"/>
+</div>
+<div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+<button class="flex items-center gap-2 px-4 py-2 bg-white border border-[#d7e3f7] rounded-full text-label-sm font-label-sm text-on-surface hover:bg-surface-container-low transition-colors whitespace-nowrap"><span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span> Program</button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white border border-[#d7e3f7] rounded-full text-label-sm font-label-sm text-on-surface hover:bg-surface-container-low transition-colors whitespace-nowrap"><span class="material-symbols-outlined text-[18px]" data-icon="calendar_today">calendar_today</span> Rentang Tanggal</button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white border border-[#d7e3f7] rounded-full text-label-sm font-label-sm text-on-surface hover:bg-surface-container-low transition-colors whitespace-nowrap"><span class="material-symbols-outlined text-[18px]" data-icon="sort">sort</span> Urutkan</button>
+</div>
+</div>
+<!-- Status Summary Chips (Bento-lite style) -->
+<div class="grid grid-cols-2 gap-3 mb-6">
+<div class="bg-white border border-[#d7e3f7] p-3 rounded-xl shadow-sm">
+<p class="text-caption font-label-sm text-outline mb-1 uppercase tracking-wider">Total Active</p>
+<p class="text-h3 font-h3 text-primary">124</p>
+</div>
+<div class="bg-white border border-[#d7e3f7] p-3 rounded-xl shadow-sm">
+<p class="text-caption font-label-sm text-outline mb-1 uppercase tracking-wider">Due Today</p>
+<p class="text-h3 font-h3 text-secondary">12</p>
+</div>
+</div>
+<!-- Distribution List -->
+<div class="space-y-3">Diverifikasi oleh: Petugas Lapangan Alpha</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center bg-white dark:bg-slate-900 px-2 py-3 pb-safe border-t border-[#d7e3f7] dark:border-slate-800 shadow-[0_-2px_10px_rgba(31,99,219,0.05)]">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-2 py-1 hover:text-[#1f63db] active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium mt-1">Dasbor</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-2 py-1 hover:text-[#1f63db] active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium mt-1">Verifikasi</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-2 py-1 hover:text-[#1f63db] active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium mt-1">Daftar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#1f63db] dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-xl px-2 py-1 active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-['Public_Sans'] text-[10px] font-bold mt-1">Distribusi</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-2 py-1 hover:text-[#1f63db] active:scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="public">public</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium mt-1">Portal</span>
+</a>
+</nav>
+<!-- Contextual FAB for Distribution -->
+<button class="fixed right-6 bottom-24 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined text-[28px]" data-icon="add">add</span>
+</button>
+</body></html>

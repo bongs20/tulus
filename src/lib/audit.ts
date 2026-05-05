@@ -1,7 +1,7 @@
 // src/lib/audit.ts
 import { PrismaClient, Role } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const getPrisma = () => new PrismaClient();
 
 interface AuditLogData {
   userId: string;
@@ -12,7 +12,7 @@ interface AuditLogData {
 
 export async function writeAuditLog({ userId, action, description, note }: AuditLogData) {
   try {
-    await prisma.tbl_audit_log.create({
+    await getPrisma().tbl_audit_log.create({
       data: {
         id_pengguna: userId,
         aksi: action,

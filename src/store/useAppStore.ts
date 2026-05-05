@@ -1,11 +1,11 @@
 // src/store/useAppStore.ts
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { tbl_penerima } from '@prisma/client';
+import { DecryptedPenerimaWithRelations } from '@/types';
 
 interface AppState {
-  selectedPenerima: tbl_penerima | null;
-  setSelectedPenerima: (penerima: tbl_penerima | null) => void;
+  selectedPenerima: DecryptedPenerimaWithRelations | null;
+  setSelectedPenerima: (penerima: DecryptedPenerimaWithRelations | null) => void;
   // Add other global states as needed
 }
 

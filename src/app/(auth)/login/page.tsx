@@ -1,87 +1,74 @@
-// src/app/(auth)/login/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getSession, signIn } from 'next-auth/react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-export default function LoginPage() {
+function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
+    const callbackUrl = searchParams.get('callbackUrl') || undefined;
     const result = await signIn('credentials', {
       redirect: false,
       username,
       password,
+      callbackUrl,
     });
-
     setIsLoading(false);
 
     if (result?.error) {
-      toast.error(result.error, {
-        title: 'Login Gagal',
-      });
-    } else {
-      // Role-based redirect
-      const session = await signIn(); // Fetch session to get user role
-      if (session?.user?.role === 'ADMINISTRATOR' || session?.user?.role === 'KEPALA_BIDANG') {
-        router.push('/dashboard');
-      } else if (session?.user?.role === 'PETUGAS_VERIFIKATOR') {
-        router.push('/antrian');
-      } else {
-        router.push('/'); // Fallback
-      }
+      toast.error(`Login Gagal: ${result.error}`);
+      return;
     }
+
+    if (result?.url) {
+      router.push(result.url);
+      return;
+    }
+
+    const session = await getSession();
+    if (session?.user?.role === 'PETUGAS_VERIFIKATOR') router.push('/antrian');
+    else router.push('/dashboard');
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-100">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">TULUS</CardTitle>
-          <CardDescription className="text-center">Sistem Manajemen Kesejahteraan Sosial</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Masukkan username Anda"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Memuat...' : 'Login'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-screen items-center justify-center bg-[#faf8ff] px-4">
+      <div className="w-full max-w-md rounded-2xl border border-[#d7e3f7] bg-white p-8 shadow-sm">
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-black text-blue-700">TULUS</h1>
+          <p className="mt-1 text-sm text-slate-500">Sistem Manajemen Kesejahteraan Sosial</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input id="username" type="text" placeholder="Masukkan username" required value={username} onChange={(e) => setUsername(e.target.value)} className="border-[#d7e3f7]" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} className="border-[#d7e3f7]" />
+          </div>
+          <Button type="submit" className="w-full bg-[#1f63db] hover:bg-[#194fb2]" disabled={isLoading}>{isLoading ? 'Memuat...' : 'Login'}</Button>
+        </form>
+      </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#faf8ff]" />}>
+      <LoginForm />
+    </Suspense>
   );
 }

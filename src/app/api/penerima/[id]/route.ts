@@ -1,11 +1,11 @@
 // src/app/api/penerima/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, JenisKelamin, StatusVerifikasi } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { writeAuditLog } from '@/lib/audit';
 import { encrypt, decrypt } from '@/lib/crypto';
-import { identitasSchema } from '@/lib/validators'; // For validation, if used
+import { updatePenerimaSchema } from '@/lib/validators';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 import { sanitizeObject } from '@/lib/sanitizer';
 
@@ -24,14 +24,14 @@ async function checkRole(req: NextRequest, allowedRoles: string[]) {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const { id } = params;
+  const { id } = await params;
   const authCheck = await checkRole(req, ['ADMINISTRATOR', 'KEPALA_BIDANG', 'PETUGAS_VERIFIKATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });
@@ -69,14 +69,14 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const { id } = params;
+  const { id } = await params;
   const authCheck = await checkRole(req, ['ADMINISTRATOR', 'PETUGAS_VERIFIKATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });
@@ -86,42 +86,28 @@ export async function PUT(
   try {
     const body = await req.json();
     const sanitizedBody = sanitizeObject(body);
-    const {
-      nik, // NIK can be updated, but needs to be unique (encrypted)
-      nama_lengkap,
-      tanggal_lahir,
-      jenis_kelamin,
-      alamat,
-      nomor_telepon,
-      jumlah_anggota_keluarga,
-      jenis_pekerjaan,
-      status_kepemilikan_rumah,
-      keterangan_ekonomi,
-      // No status_verifikasi update here directly, handled by /api/verifikasi
-      // No foto updates here directly, handled via separate foto API if needed
-    } = sanitizedBody;
+    const parsed = updatePenerimaSchema.parse(sanitizedBody);
+    const { nik, ...rest } = parsed;
 
-    let dataToUpdate: any = {
-      nama_lengkap,
-      tanggal_lahir: new Date(tanggal_lahir),
-      jenis_kelamin,
-      alamat,
-      nomor_telepon,
-      jumlah_anggota_keluarga,
-      jenis_pekerjaan,
-      status_kepemilikan_rumah,
-      keterangan_ekonomi,
-    };
+    const dataToUpdate: Record<string, unknown> = {};
+    Object.entries(rest).forEach(([key, value]) => {
+      if (value !== undefined) dataToUpdate[key] = value;
+    });
 
     if (nik) {
       const encryptedNik = encrypt(nik);
-      // Check for duplicate NIK if it's being updated to a new value
-      const existingPenerimaWithNewNik = await prisma.tbl_penerima.findUnique({
-        where: { nik: encryptedNik },
-        select: { id: true },
+      const allPenerima = await prisma.tbl_penerima.findMany({
+        where: { id: { not: id } },
+        select: { nik: true },
       });
-
-      if (existingPenerimaWithNewNik && existingPenerimaWithNewNik.id !== id) {
+      const duplicateNik = allPenerima.some((penerima) => {
+        try {
+          return decrypt(penerima.nik) === nik;
+        } catch {
+          return false;
+        }
+      });
+      if (duplicateNik) {
         return NextResponse.json({ message: 'NIK sudah terdaftar.' }, { status: 409 });
       }
       dataToUpdate.nik = encryptedNik;
@@ -156,14 +142,14 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const { id } = params;
+  const { id } = await params;
   const authCheck = await checkRole(req, ['ADMINISTRATOR']); // Only admin can delete penerima
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });

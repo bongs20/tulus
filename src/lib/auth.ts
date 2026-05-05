@@ -4,7 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import { compare } from "bcryptjs";
 
-const prisma = new PrismaClient();
+const getPrisma = () => new PrismaClient();
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -19,7 +19,7 @@ export const authOptions: AuthOptions = {
           return null
         }
 
-        const user = await prisma.tbl_pengguna.findUnique({
+        const user = await getPrisma().tbl_pengguna.findUnique({
           where: { username: credentials.username }
         })
 
@@ -39,7 +39,7 @@ export const authOptions: AuthOptions = {
         if (!isPasswordValid) {
           // Password is not valid
           // Increment login attempts and potentially lock account
-          const updatedUser = await prisma.tbl_pengguna.update({
+          const updatedUser = await getPrisma().tbl_pengguna.update({
             where: { id: user.id },
             data: {
               login_attempts: {
@@ -50,7 +50,7 @@ export const authOptions: AuthOptions = {
 
           // Lock account after 5 failed attempts for 15 minutes
           if (updatedUser.login_attempts >= 5) {
-            await prisma.tbl_pengguna.update({
+            await getPrisma().tbl_pengguna.update({
               where: { id: user.id },
               data: {
                 status_akun: 'TERKUNCI',
@@ -66,7 +66,7 @@ export const authOptions: AuthOptions = {
 
         // If password is valid, reset login attempts and unlock if it was locked (but not by time limit)
         if (user.login_attempts > 0 || user.status_akun === 'TERKUNCI') {
-          await prisma.tbl_pengguna.update({
+          await getPrisma().tbl_pengguna.update({
             where: { id: user.id },
             data: {
               login_attempts: 0,
@@ -110,4 +110,4 @@ export const authOptions: AuthOptions = {
     maxAge: 30 * 60, // 30 minutes for session inactivity
   },
   secret: process.env.NEXTAUTH_SECRET,
-}
+};

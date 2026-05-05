@@ -1,7 +1,20 @@
 // src/types/index.ts
 import { DefaultSession, DefaultUser } from "next-auth";
 import { JWT, DefaultJWT } from "next-auth/jwt";
-import { Role } from "@prisma/client"; // Import Prisma Role enum
+import { Role, tbl_desil, tbl_foto, tbl_penerima } from "@prisma/client"; // Import Prisma Role enum
+
+export interface DecryptedFoto extends Omit<tbl_foto, "url_foto"> {
+  url_foto: string;
+}
+
+export interface DecryptedPenerima extends Omit<tbl_penerima, "nik"> {
+  nik: string;
+}
+
+export interface DecryptedPenerimaWithRelations extends DecryptedPenerima {
+  fotos: DecryptedFoto[];
+  desil_data: tbl_desil[];
+}
 
 declare module "next-auth" {
   interface Session {

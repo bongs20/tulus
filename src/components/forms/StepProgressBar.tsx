@@ -15,14 +15,16 @@ export function StepProgressBar({ currentStep, totalSteps, labels }: StepProgres
       {Array.from({ length: totalSteps }).map((_, index) => {
         const stepNumber = index + 1;
         const isActive = stepNumber <= currentStep;
-        const isCurrent = stepNumber === currentStep;
+        const isCompleted = stepNumber < currentStep;
 
         return (
           <div key={index} className="flex flex-col items-center flex-1">
             <div
               className={cn(
-                'relative flex h-8 w-8 items-center justify-center rounded-full text-white',
-                isActive ? 'bg-primary' : 'bg-muted-foreground'
+                'relative flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold border',
+                isActive
+                  ? 'bg-primary text-white border-primary'
+                  : 'bg-white text-muted-foreground border-border'
               )}
             >
               {stepNumber}
@@ -30,7 +32,7 @@ export function StepProgressBar({ currentStep, totalSteps, labels }: StepProgres
                 <div
                   className={cn(
                     'absolute left-[calc(100%+8px)] top-1/2 h-0.5 w-[calc(100%-16px)] -translate-y-1/2',
-                    isActive && !isCurrent ? 'bg-primary' : 'bg-muted-foreground'
+                    isCompleted ? 'bg-primary' : 'bg-border'
                   )}
                 />
               )}

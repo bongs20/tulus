@@ -4,6 +4,7 @@ interface DtksSyncResult {
   desil?: number;
   message?: string;
   mismatched_fields?: string[];
+  source: "DUMMY_DTKS";
 }
 
 interface DtksPersonData {
@@ -12,39 +13,23 @@ interface DtksPersonData {
   tanggal_lahir: Date;
 }
 
-/**
- * Mocks a DTKS synchronization API call.
- * - NIK ending in an odd number: MATCH
- * - NIK ending in an even number: MISMATCH
- *
- * @param personData The person data to sync.
- * @returns A promise that resolves with the DTKS sync result.
- */
 export async function mockDtksSync(personData: DtksPersonData): Promise<DtksSyncResult> {
-  return new Promise((resolve) => {
-    // Simulate network delay
-    setTimeout(() => {
-      const lastNikDigit = parseInt(personData.nik.slice(-1));
+  // Simulasi gangguan API eksternal untuk menguji mekanisme retry/tertunda.
+  if (personData.nik.startsWith("999")) {
+    throw new Error("DTKS service unavailable (dummy)");
+  }
 
-      if (lastNikDigit % 2 !== 0) { // Odd number = MATCH
-        resolve({
-          status: "MATCH",
-          desil: Math.floor(Math.random() * 10) + 1, // Random desil 1-10
-          message: "Data cocok dengan DTKS.",
-        });
-      } else { // Even number = MISMATCH
-        // Simulate some mismatched fields
-        const mismatched_fields = [];
-        if (Math.random() > 0.5) mismatched_fields.push("nama_lengkap");
-        if (Math.random() > 0.5) mismatched_fields.push("tanggal_lahir");
-        if (mismatched_fields.length === 0) mismatched_fields.push("alamat"); // Ensure at least one mismatch
+  const lastNikDigit = Number.parseInt(personData.nik.slice(-1), 10);
+  const desilBase = Number.isNaN(lastNikDigit) ? 1 : (lastNikDigit % 10) + 1;
+  const isMatch = Number.isNaN(lastNikDigit) ? false : lastNikDigit % 2 === 0;
 
-        resolve({
-          status: "MISMATCH",
-          message: "Data tidak cocok dengan DTKS.",
-          mismatched_fields,
-        });
-      }
-    }, 2000); // 2-second delay
-  });
+  return {
+    status: isMatch ? "MATCH" : "MISMATCH",
+    desil: desilBase,
+    message: isMatch
+      ? `Sinkronisasi DTKS menggunakan data dummy untuk ${personData.nama} berhasil.`
+      : `Data dummy DTKS tidak cocok untuk ${personData.nama}.`,
+    mismatched_fields: isMatch ? [] : ["nik"],
+    source: "DUMMY_DTKS",
+  };
 }

@@ -1,19 +1,17 @@
 // src/lib/sanitizer.ts
-import DOMPurify from 'dompurify';
 
 export function sanitize(dirty: string | undefined | null): string {
   if (!dirty) {
     return '';
   }
-  // Isomorphic DOMPurify, to work on server and client
-  const isServer = typeof window === 'undefined';
-  if (isServer) {
-    // For server-side, you might need a different setup or a library like jsdom
-    // For simplicity here, we'll just do basic escaping as a fallback on server if no window object.
-    // A more robust solution would be to use a server-side HTML sanitizer.
-    return dirty.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-  return DOMPurify.sanitize(dirty);
+
+  // Keep sanitizer server-safe by avoiding browser-only dependencies at module load.
+  return dirty
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Function to sanitize all string properties of an object

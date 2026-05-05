@@ -1,8 +1,6 @@
-// src/app/(dashboard)/pengaturan/page.tsx
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UserTable } from '@/components/pengaturan/UserTable';
 import { UserForm } from '@/components/pengaturan/UserForm';
@@ -18,37 +16,26 @@ export default function PengaturanPage() {
     setIsFormOpen(true);
   };
 
-  const handleFormSuccess = () => {
-    setIsFormOpen(false);
-    setEditingUser(undefined);
-    // UserTable uses SWR with refreshInterval, so it will automatically update.
-  };
-
-  const handleFormCancel = () => {
-    setIsFormOpen(false);
-    setEditingUser(undefined);
-  };
-
   return (
-    <div className="space-y-6 p-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Manajemen Pengguna</CardTitle>
-          <Button onClick={() => { setEditingUser(undefined); setIsFormOpen(true); }}>Tambah Pengguna Baru</Button>
-        </CardHeader>
-        <CardContent>
-          <UserTable onEditUser={handleEditUser} />
-        </CardContent>
-      </Card>
+    <main className="mx-auto w-full max-w-7xl space-y-6">
+      <div className="flex items-end justify-between">
+        <div>
+          <h2 className="text-3xl font-semibold text-[#191b23]">Manajemen Pengguna</h2>
+          <p className="text-sm text-slate-500">Kelola akun, role, dan status pengguna internal.</p>
+        </div>
+        <Button onClick={() => { setEditingUser(undefined); setIsFormOpen(true); }} className="bg-[#1f63db] hover:bg-[#194fb2]">Tambah Pengguna Baru</Button>
+      </div>
+
+      <div className="rounded-xl border border-[#d7e3f7] bg-white p-4">
+        <UserTable onEditUser={handleEditUser} />
+      </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}</DialogTitle>
-          </DialogHeader>
-          <UserForm initialData={editingUser} onSuccess={handleFormSuccess} onCancel={handleFormCancel} />
+          <DialogHeader><DialogTitle>{editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}</DialogTitle></DialogHeader>
+          <UserForm initialData={editingUser} onSuccess={() => { setIsFormOpen(false); setEditingUser(undefined); }} onCancel={() => { setIsFormOpen(false); setEditingUser(undefined); }} />
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 }

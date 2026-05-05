@@ -19,10 +19,8 @@ import { StatusVerifikasi } from '@prisma/client';
 import { toast } from 'sonner';
 
 const formSchema = z.object({
-  status: z.enum([StatusVerifikasi.DISETUJUI, StatusVerifikasi.DITOLAK], {
-    required_error: 'Pilih status verifikasi.',
-  }),
-  catatan: z.string().optional(),
+  status: z.enum([StatusVerifikasi.DISETUJUI, StatusVerifikasi.DITOLAK]),
+  catatan: z.string().min(1, 'Catatan wajib diisi.'),
 });
 
 type FormVerifikasiValues = z.infer<typeof formSchema>;
@@ -78,20 +76,20 @@ export function FormVerifikasi({ penerimaId, onSuccess, isLoading, onLoadingChan
                 <RadioGroup
                   onValueChange={field.onChange}
                   defaultValue={field.value}
-                  className="flex flex-col space-y-1"
+                  className="grid grid-cols-1 gap-2 sm:grid-cols-2"
                   disabled={isLoading}
                 >
-                  <FormItem className="flex items-center space-x-3 space-y-0">
+                  <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border border-emerald-200 bg-emerald-50 p-3">
                     <FormControl>
                       <RadioGroupItem value={StatusVerifikasi.DISETUJUI} />
                     </FormControl>
-                    <FormLabel className="font-normal">Setuju</FormLabel>
+                    <FormLabel className="font-medium text-emerald-800">Setuju</FormLabel>
                   </FormItem>
-                  <FormItem className="flex items-center space-x-3 space-y-0">
+                  <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border border-red-200 bg-red-50 p-3">
                     <FormControl>
                       <RadioGroupItem value={StatusVerifikasi.DITOLAK} />
                     </FormControl>
-                    <FormLabel className="font-normal">Tolak</FormLabel>
+                    <FormLabel className="font-medium text-red-800">Tolak</FormLabel>
                   </FormItem>
                 </RadioGroup>
               </FormControl>
@@ -105,10 +103,10 @@ export function FormVerifikasi({ penerimaId, onSuccess, isLoading, onLoadingChan
           name="catatan"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Catatan (Opsional)</FormLabel>
+              <FormLabel>Catatan Alasan</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Tambahkan catatan verifikasi..."
+                  placeholder="Jelaskan alasan verifikasi (wajib)..."
                   className="resize-none"
                   {...field}
                   disabled={isLoading}
@@ -119,7 +117,7 @@ export function FormVerifikasi({ penerimaId, onSuccess, isLoading, onLoadingChan
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full bg-primary hover:bg-[#194fb2]" disabled={isLoading}>
           Kirim Verifikasi
         </Button>
       </form>

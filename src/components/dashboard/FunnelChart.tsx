@@ -37,8 +37,18 @@ export function FunnelChart({ data }: FunnelChartProps) {
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" hide />
         <YAxis type="category" dataKey="name" width={120} />
-        <Tooltip formatter={(value: number, name: string, props: any) => [`${value} (${props.payload.percentage})`, name]} />
-        <Bar dataKey="value" fill="#8884d8">
+        <Tooltip
+          cursor={{ fill: 'rgba(31, 99, 219, 0.08)' }}
+          formatter={(value, name, item) => {
+            const percentage =
+              'payload' in item && item.payload && 'percentage' in item.payload
+                ? String(item.payload.percentage)
+                : '0%';
+
+            return [`${Number(value ?? 0)} (${percentage})`, String(name)];
+          }}
+        />
+        <Bar dataKey="value" fill="#1f63db">
           <LabelList dataKey="percentage" position="right" />
         </Bar>
       </BarChart>

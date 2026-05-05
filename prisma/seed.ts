@@ -1,8 +1,21 @@
 // prisma/seed.ts
-import { PrismaClient } from '@prisma/client';
+import { JenisKelamin, PrismaClient, StatusDtks, StatusSinkronisasi, StatusVerifikasi } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { createCipheriv, randomBytes, scryptSync } from 'crypto';
 
 const prisma = new PrismaClient();
+const algorithm = 'aes-256-gcm';
+const ivLength = 16;
+const salt = process.env.ENCRYPTION_SALT || 'tulus_encryption_salt';
+const key = scryptSync(process.env.ENCRYPTION_KEY || 'default_encryption_key', salt, 32);
+
+function encrypt(text: string): Buffer {
+  const iv = randomBytes(ivLength);
+  const cipher = createCipheriv(algorithm, key, iv);
+  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]);
+}
 
 async function main() {
   // Clear existing data (optional, for development)
@@ -10,6 +23,7 @@ async function main() {
   await prisma.tbl_audit_log.deleteMany();
   await prisma.tbl_penyaluran.deleteMany();
   await prisma.tbl_desil.deleteMany();
+  await prisma.tbl_warga.deleteMany();
   await prisma.tbl_foto.deleteMany();
   await prisma.tbl_penerima.deleteMany();
   await prisma.tbl_pengguna.deleteMany();
@@ -63,10 +77,92 @@ async function main() {
 
   console.log('Created users:', { admin, kepalaBidang, verifikator1, verifikator2 });
 
+  const coverageAreas = [
+    'Bandung',
+    'Bekasi',
+    'Bogor',
+    'Cirebon',
+    'Depok',
+    'Garut',
+    'Jakarta',
+    'Karawang',
+    'Sukabumi',
+    'Tasikmalaya',
+  ];
+  const outsideAreas = ['Kabupaten Luar Utara', 'Kabupaten Luar Selatan'];
+  const firstNames = ['Adi', 'Budi', 'Citra', 'Dewi', 'Eko', 'Fajar', 'Gina', 'Hadi', 'Indah', 'Joko'];
+  const lastNames = ['Pratama', 'Santoso', 'Lestari', 'Wijaya', 'Sari', 'Hidayat', 'Putri', 'Saputra', 'Aminah', 'Ramadhan'];
+
+  // Add specific test warga for Muhammad Syaiful (testing data)
+  await prisma.tbl_warga.create({
+    data: {
+      nik: encrypt('111111'),
+      nama_lengkap: 'Muhammad Syaiful',
+      alamat: 'Jl. Test No. 1, Bandung',
+      wilayah: coverageAreas[0],
+      status_dtks: StatusDtks.BELUM_TERDAFTAR,
+      nilai_kesejahteraan: 2,
+      is_dalam_jangkauan: true,
+      catatan: 'Test record: belum mendaftar',
+    },
+  });
+
+
+  for (let index = 1; index <= 100; index++) {
+    const isOutsideCoverage = index % 8 === 0;
+    const isMissingData = index % 10 === 0;
+    const isInCoverage = !isOutsideCoverage;
+    const statusDtks = isOutsideCoverage
+      ? StatusDtks.LUAR_JANGKAUAN
+      : isMissingData
+        ? StatusDtks.DATA_TIDAK_ADA
+        : index % 5 === 0
+          ? StatusDtks.BELUM_TERDAFTAR
+          : StatusDtks.TERDAFTAR;
+    const wilayah = isInCoverage
+      ? coverageAreas[(index - 1) % coverageAreas.length]
+      : outsideAreas[(index - 1) % outsideAreas.length];
+    const namaLengkap = `${firstNames[(index - 1) % firstNames.length]} ${lastNames[(index - 1) % lastNames.length]} ${String(index).padStart(3, '0')}`;
+    const nik = String(3200000000000000 + index);
+
+    await prisma.tbl_warga.create({
+      data: {
+        nik: encrypt(nik),
+        nama_lengkap: namaLengkap,
+        alamat: `${wilayah} RW ${String((index % 12) + 1).padStart(2, '0')} / RT ${String((index % 6) + 1).padStart(2, '0')}`,
+        wilayah,
+        status_dtks: statusDtks,
+        nilai_kesejahteraan: ((index * 7) % 10) + 1,
+        is_dalam_jangkauan: isInCoverage && !isOutsideCoverage,
+        catatan: isOutsideCoverage
+          ? 'Di luar jangkauan layanan.'
+          : isMissingData
+            ? 'Data DTKS belum lengkap.'
+            : statusDtks === StatusDtks.BELUM_TERDAFTAR
+              ? 'Belum terdaftar DTKS, namun masih dapat mendaftar.'
+              : 'Warga dalam jangkauan layanan.',
+      },
+    });
+  }
+
+  console.log('Created warga registry records: 100');
+
   // Create dummy penerima records
-  const penerimaData = [
+  const penerimaData: Array<{
+    nik: string;
+    nama_lengkap: string;
+    tanggal_lahir: Date;
+    jenis_kelamin: JenisKelamin;
+    alamat: string;
+    nomor_telepon: string;
+    jumlah_anggota_keluarga: number;
+    jenis_pekerjaan: string;
+    status_kepemilikan_rumah: string;
+    keterangan_ekonomi: string;
+    status_verifikasi: StatusVerifikasi;
+  }> = [
     {
-      nik: '3274010101000001', // Odd NIK for MATCH
+      nik: '3274010101000001',
       nama_lengkap: 'Budi Santoso',
       tanggal_lahir: new Date('1980-05-15'),
       jenis_kelamin: 'LAKI_LAKI',
@@ -79,7 +175,7 @@ async function main() {
       status_verifikasi: 'MATCH',
     },
     {
-      nik: '3274010101000002', // Even NIK for MISMATCH
+      nik: '3274010101000002',
       nama_lengkap: 'Siti Aminah',
       tanggal_lahir: new Date('1992-11-22'),
       jenis_kelamin: 'PEREMPUAN',
@@ -329,36 +425,50 @@ async function main() {
   ];
 
   for (const data of penerimaData) {
-    const penerima = await prisma.tbl_penerima.create({ data });
-    console.log(`Created penerima with NIK: ${penerima.nik}`);
+    const penerima = await prisma.tbl_penerima.create({
+      data: {
+        ...data,
+        nik: encrypt(data.nik),
+      },
+    });
+    console.log(`Created penerima with NIK: ${data.nik}`);
 
-    // Add some dummy photos for penerima with status DISETUJUI or MATCH
+    // REQ-F-002: minimal 1 foto untuk setiap calon penerima.
+    await prisma.tbl_foto.create({
+      data: {
+        id_penerima: penerima.id,
+        url_foto: encrypt(`https://example.com/photos/${data.nik}_1.jpg`),
+        nama_file: `${data.nik}_1.jpg`,
+      },
+    });
+
+    // Tambah foto kedua untuk data yang sudah lolos awal/akhir agar realistis.
     if (penerima.status_verifikasi === 'DISETUJUI' || penerima.status_verifikasi === 'MATCH') {
       await prisma.tbl_foto.create({
         data: {
           id_penerima: penerima.id,
-          url_foto: `https://example.com/photos/${penerima.nik}_1.jpg`,
-          nama_file: `${penerima.nik}_1.jpg`,
-        },
-      });
-      await prisma.tbl_foto.create({
-        data: {
-          id_penerima: penerima.id,
-          url_foto: `https://example.com/photos/${penerima.nik}_2.jpg`,
-          nama_file: `${penerima.nik}_2.jpg`,
+          url_foto: encrypt(`https://example.com/photos/${data.nik}_2.jpg`),
+          nama_file: `${data.nik}_2.jpg`,
         },
       });
     }
 
-    // Add dummy desil data for penerima with status MATCH or DISETUJUI
-    if (penerima.status_verifikasi === 'MATCH' || penerima.status_verifikasi === 'DISETUJUI') {
+    // Simpan jejak sinkronisasi DTKS untuk semua status yang sudah pernah disinkronkan.
+    let syncStatus: StatusSinkronisasi | null = null;
+    if (penerima.status_verifikasi === 'MATCH' || penerima.status_verifikasi === 'DISETUJUI' || penerima.status_verifikasi === 'DITOLAK') {
+      syncStatus = StatusSinkronisasi.MATCH;
+    } else if (penerima.status_verifikasi === 'MISMATCH') {
+      syncStatus = StatusSinkronisasi.MISMATCH;
+    }
+
+    if (syncStatus) {
       await prisma.tbl_desil.create({
         data: {
           id_penerima: penerima.id,
           nik: penerima.nik,
           nilai_desil: Math.floor(Math.random() * 10) + 1, // Random desil 1-10
           sumber_data: 'DTKS Mock',
-          status_sinkronisasi: 'MATCH',
+          status_sinkronisasi: syncStatus,
           tanggal_sinkronisasi: new Date(),
         },
       });
@@ -418,8 +528,8 @@ async function main() {
 
   // Add sample sanggahan records
   if (penerimaData[1]) { // Siti Aminah (MISMATCH)
-    const sitiAminah = await prisma.tbl_penerima.findUnique({
-      where: { nik: penerimaData[1].nik },
+    const sitiAminah = await prisma.tbl_penerima.findFirst({
+      where: { nama_lengkap: penerimaData[1].nama_lengkap },
     });
     if (sitiAminah) {
       await prisma.tbl_sanggahan.create({

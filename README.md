@@ -49,6 +49,7 @@ TULUS is a comprehensive web-based social welfare management system designed for
         ```bash
         openssl rand -base64 32
         ```
+    -   For deployments behind a reverse proxy, set `NEXTAUTH_URL` to the public HTTPS URL exposed by the proxy, not the internal app address.
     -   Update the other service keys (Twilio, Pusher, Uploadthing) with your credentials.
 
 4.  **Run database migrations and seeding:**

@@ -32,13 +32,19 @@ export function MonthlyBarChart({ data }: BarChartProps) {
           bottom: 5,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#d7e3f7" />
         <XAxis dataKey="month" />
-        <YAxis />
-        <Tooltip formatter={(value: number, name: string) => [`${value} ${name === 'count' ? 'Penyaluran' : 'Rp'}`, name]} />
+        <YAxis tickLine={false} axisLine={false} />
+        <Tooltip
+          cursor={{ fill: 'rgba(31, 99, 219, 0.08)' }}
+          formatter={(value, name) => [
+            `${Number(value ?? 0)} ${name === 'count' ? 'Penyaluran' : 'Rp'}`,
+            String(name),
+          ]}
+        />
         <Legend />
-        <Bar dataKey="count" name="Jumlah Penyaluran" fill="#8884d8" />
-        <Bar dataKey="sum" name="Total Nominal (Rp)" fill="#82ca9d" />
+        <Bar dataKey="count" name="Jumlah Penyaluran" fill="#1f63db" />
+        <Bar dataKey="sum" name="Total Nominal (Rp)" fill="#5b9bff" />
       </BarChart>
     </ResponsiveContainer>
   );

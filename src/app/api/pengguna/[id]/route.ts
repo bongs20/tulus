@@ -33,14 +33,14 @@ const updateUserSchema = z.object({
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const rateLimitResponse = applyRateLimiter(req as any);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const { id } = params;
+  const { id } = await params;
   const authCheck = await checkRole(req, ['ADMINISTRATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });
@@ -80,7 +80,7 @@ export async function PUT(
     return NextResponse.json(updatedUser, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Validasi input gagal.', errors: error.errors }, { status: 400 });
+      return NextResponse.json({ message: 'Validasi input gagal.', errors: error.issues }, { status: 400 });
     }
     console.error('Error updating user:', error);
     return NextResponse.json({ message: 'Gagal memperbarui pengguna.' }, { status: 500 });
@@ -89,14 +89,14 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const rateLimitResponse = applyRateLimiter(req as any);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const { id } = params;
+  const { id } = await params;
   const authCheck = await checkRole(req, ['ADMINISTRATOR']);
   if (!authCheck.authorized) {
     return NextResponse.json({ message: authCheck.message }, { status: 403 });

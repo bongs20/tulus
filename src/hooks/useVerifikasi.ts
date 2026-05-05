@@ -4,7 +4,7 @@ import { StatusVerifikasi } from '@prisma/client';
 import { toast } from 'sonner';
 
 interface VerifyRecipientPayload {
-  status: StatusVerifikasi.DISETUJUI | StatusVerifikasi.DITOLAK;
+  status: 'DISETUJUI' | 'DITOLAK';
   catatan?: string;
 }
 

@@ -4,9 +4,7 @@ import { PrismaClient, JenisBantuan, StatusPenyaluran } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import ExcelJS from 'exceljs';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
-import { id } from 'date-fns/locale'; // For Indonesian locale
+import { startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 
 const prisma = new PrismaClient();
@@ -188,68 +186,10 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (exportType === 'pdf') {
-      const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage();
-      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const fontSize = 12;
-      const titleFontSize = 24;
-      let y = page.getHeight() - 50;
-      const margin = 50;
-      const lineHeight = fontSize + 5;
-
-      page.drawText('Laporan Penyaluran Bantuan TULUS', {
-        x: margin,
-        y: y,
-        font,
-        size: titleFontSize,
-        color: rgb(0, 0.53, 0.71), // Blue
-      });
-      y -= titleFontSize * 2;
-
-      page.drawText(`Periode: ${reportData.periode}`, { x: margin, y: y, font, size: fontSize });
-      y -= lineHeight;
-      page.drawText(`Jenis Bantuan: ${reportData.jenisBantuan}`, { x: margin, y: y, font, size: fontSize });
-      y -= lineHeight;
-      page.drawText(`Wilayah: ${reportData.wilayah}`, { x: margin, y: y, font, size: fontSize });
-      y -= lineHeight * 2;
-
-      page.drawText('Key Performance Indicators:', { x: margin, y: y, font, size: fontSize + 2, color: rgb(0, 0, 0), bold: true });
-      y -= lineHeight;
-      page.drawText(`Total Penerima: ${reportData.totalPenerima}`, { x: margin, y: y, font, size: fontSize });
-      y -= lineHeight;
-      page.drawText(`Total Anggaran Tersalurkan: ${totalAnggaran}`, { x: margin, y: y, font, size: fontSize });
-      y -= lineHeight;
-      page.drawText(`Total Penyaluran Berhasil: ${reportData.totalTersalurkanCount}`, { x: margin, y: y, font, size: fontSize });
-      y -= lineHeight;
-      page.drawText(`Total Penyaluran Gagal: ${reportData.totalDitolakCount}`, { x: margin, y: y, font, size: fontSize });
-      y -= lineHeight;
-      page.drawText(`% Tersalurkan: ${reportData.percentTersalurkan.toFixed(2)}%`, { x: margin, y: y, font, size: fontSize });
-      y -= lineHeight * 2;
-
-      page.drawText('Ringkasan Per Program:', { x: margin, y: y, font, size: fontSize + 2, color: rgb(0, 0, 0), bold: true });
-      y -= lineHeight;
-
-      // Table Headers
-      page.drawText('Jenis Bantuan', { x: margin, y: y, font, size: fontSize, bold: true });
-      page.drawText('Jumlah Penyaluran', { x: margin + 150, y: y, font, size: fontSize, bold: true });
-      page.drawText('Total Nominal', { x: margin + 300, y: y, font, size: fontSize, bold: true });
-      y -= lineHeight;
-
-      programBreakdown.forEach(item => {
-        page.drawText(item.jenis_bantuan, { x: margin, y: y, font, size: fontSize });
-        page.drawText(item._count.id.toString(), { x: margin + 150, y: y, font, size: fontSize });
-        page.drawText((item._sum.nominal_bantuan?.toNumber() || 0).toLocaleString('id-ID'), { x: margin + 300, y: y, font, size: fontSize });
-        y -= lineHeight;
-      });
-
-      const pdfBytes = await pdfDoc.save();
-
-      return new NextResponse(pdfBytes, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="laporan_penyaluran_${periode || 'all'}.pdf"`,
-        },
-      });
+      return NextResponse.json(
+        { message: 'Ekspor PDF belum tersedia pada build ini.' },
+        { status: 501 }
+      );
     }
 
     return NextResponse.json(reportData, { status: 200 });

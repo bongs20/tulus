@@ -13,11 +13,9 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input'; // Used for select-like fields, e.g., if we convert them to Input with datalist
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
 
 type EkonomiFormValues = z.infer<typeof ekonomiSchema>;
 
@@ -40,7 +38,7 @@ export function FormEkonomi({ initialData, onNext, onBack, isLoading }: FormEkon
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 rounded-lg border border-border bg-white p-4">
         <FormField
           control={form.control}
           name="jenis_pekerjaan"
@@ -115,7 +113,7 @@ export function FormEkonomi({ initialData, onNext, onBack, isLoading }: FormEkon
           <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>
             Kembali
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" className="bg-primary hover:bg-[#194fb2]" disabled={isLoading}>
             Lanjutkan
           </Button>
         </div>

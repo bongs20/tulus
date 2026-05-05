@@ -1,8 +1,8 @@
 // src/components/pengaturan/UserTable.tsx
 'use client';
 
-import { useState, useMemo } from 'react';
-import { tbl_pengguna, Role, StatusAkun } from '@prisma/client';
+import { useState } from 'react';
+import { tbl_pengguna } from '@prisma/client';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -19,6 +19,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import { TableState } from '@/components/shared/TableState';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -91,13 +92,11 @@ export function UserTable({ onEditUser }: UserTableProps) {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Memuat data pengguna...</TableCell>
-              </TableRow>
+              <TableState colSpan={5} state="loading" message="Memuat data pengguna..." />
+            ) : error ? (
+              <TableState colSpan={5} state="error" message="Gagal memuat data pengguna." />
             ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Tidak ada pengguna yang ditemukan.</TableCell>
-              </TableRow>
+              <TableState colSpan={5} state="empty" message="Tidak ada pengguna yang ditemukan." />
             ) : (
               users.map((user) => (
                 <TableRow key={user.id}>
@@ -128,7 +127,7 @@ export function UserTable({ onEditUser }: UserTableProps) {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-destructive"
-                          disabled={user.status_akun === 'NONAKTIF' || user.id === 'CURRENT_USER_ID'} // Prevent deactivating self
+                          disabled={user.id === 'CURRENT_USER_ID'} // Prevent deactivating self
                         >
                           <Trash className="h-4 w-4" />
                           <span className="sr-only">Nonaktifkan</span>

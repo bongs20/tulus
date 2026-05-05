@@ -4,6 +4,7 @@ import { PrismaClient, StatusVerifikasi, StatusPenyaluran, JenisBantuan } from '
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { applyRateLimiter } from '@/lib/rate-limiter';
+import { decrypt } from '@/lib/crypto';
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const toSafeNumber = (value: unknown): number => {
+      if (typeof value === 'number') return value;
+      if (value && typeof value === 'object' && 'toNumber' in value && typeof (value as { toNumber: unknown }).toNumber === 'function') {
+        return (value as { toNumber: () => number }).toNumber();
+      }
+      return 0;
+    };
+
     // 1. Total Masuk (all penerima records)
     const total_masuk = await prisma.tbl_penerima.count();
 
@@ -88,7 +97,7 @@ export async function GET(req: NextRequest) {
     const formattedMonthlyTrend = monthly_trend.map((item) => ({
       month: item.tanggal_penyaluran.toLocaleString('id-ID', { month: 'short', year: 'numeric' }),
       count: item._count.id,
-      sum: item._sum.nominal_bantuan?.toNumber() || 0, // Convert Decimal to number
+      sum: toSafeNumber(item._sum.nominal_bantuan),
     }));
 
     // Funnel chart data (e.g., from total_masuk to tersalurkan)
@@ -114,6 +123,14 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    const formattedRecentPenyaluran = recent_penyaluran.map((item) => ({
+      ...item,
+      penerima: {
+        ...item.penerima,
+        nik: decrypt(item.penerima.nik),
+      },
+    }));
+
     return NextResponse.json({
       total_masuk,
       lolos_awal,
@@ -122,7 +139,7 @@ export async function GET(req: NextRequest) {
       per_program,
       monthly_trend: formattedMonthlyTrend,
       funnel_data,
-      recent_penyaluran,
+      recent_penyaluran: formattedRecentPenyaluran,
     }, { status: 200 });
 
   } catch (error) {

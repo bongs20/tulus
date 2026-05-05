@@ -14,13 +14,16 @@ model tbl_pengguna {
   username        String    @unique
   password_hash   String
   nama_lengkap    String
-  role            Role      @default(PETUGAS_VERIFIKATOR) // Default role as specified in requirements for PETUGAS_VERIFIKATOR below
+  role            Role       @default(PETUGAS_VERIFIKATOR) // Default role as specified in requirements for PETUGAS_VERIFIKATOR below
   status_akun     StatusAkun @default(AKTIF)
-  login_attempts  Int       @default(0)
+  login_attempts  Int        @default(0)
   locked_until    DateTime?
-  created_at      DateTime  @default(now())
+  created_at      DateTime   @default(now())
 
-  audit_logs      tbl_audit_log[]
+  audit_logs                  tbl_audit_log[]
+  aid_verifications           aid_verification[]
+  aid_distributions           aid_distribution[]
+  aid_application_transitions aid_application_transition[]
 }
 
 enum Role {
@@ -55,6 +58,7 @@ model tbl_penerima {
   desil_data               tbl_desil[]
   penyaluran               tbl_penyaluran[]
   sanggahan                tbl_sanggahan[]
+  aid_applications         aid_application[] @relation("central_record_application")
 }
 
 enum JenisKelamin {
@@ -162,4 +166,207 @@ enum StatusSanggahan {
   PENDING
   DITINJAU
   SELESAI
+}
+
+// Warga registry model for public eligibility checking
+model tbl_warga {
+  id                  String      @id @default(uuid())
+  nik                 Bytes       @unique
+  nama_lengkap        String
+  alamat              String
+  wilayah             String
+  status_dtks         StatusDtks  @default(BELUM_TERDAFTAR)
+  nilai_kesejahteraan Int
+  is_dalam_jangkauan  Boolean     @default(true)
+  catatan             String?
+  created_at          DateTime    @default(now())
+}
+
+enum StatusDtks {
+  TERDAFTAR
+  BELUM_TERDAFTAR
+  LUAR_JANGKAUAN
+  DATA_TIDAK_ADA
+}
+
+model aid_application {
+  id                           String                   @id @default(uuid())
+  application_number           String                   @unique
+  nik                          Bytes
+  nama_lengkap                 String
+  tanggal_lahir                DateTime
+  jenis_kelamin                JenisKelamin
+  alamat                       String
+  nomor_telepon                String
+  jumlah_anggota_keluarga      Int
+  jenis_pekerjaan              String
+  status_kepemilikan_rumah     String
+  keterangan_ekonomi           String
+  status                       AidApplicationStatus     @default(SUBMITTED)
+  assigned_program             AidProgram?
+  assigned_distribution_method AidDistributionMethod?
+  nominal_bantuan              Decimal?
+  validation_summary           String?
+  admin_note                   String?
+  rejection_reason             String?
+  field_verification_required  Boolean                  @default(false)
+  submitted_at                 DateTime                 @default(now())
+  approved_at                  DateTime?
+  distributed_at               DateTime?
+  updated_at                   DateTime                 @updatedAt
+  id_penerima_pusat            String?                  @unique
+
+  central_record     tbl_penerima?                 @relation("central_record_application", fields: [id_penerima_pusat], references: [id])
+  documents          aid_application_document[]
+  validation_results aid_validation_result[]
+  verifications      aid_verification[]
+  distributions      aid_distribution[]
+  transitions        aid_application_transition[]
+
+  @@index([status])
+  @@index([submitted_at])
+}
+
+model aid_application_document {
+  id             String          @id @default(uuid())
+  application_id String
+  document_type  AidDocumentType
+  file_url       Bytes
+  file_name      String
+  uploaded_at    DateTime        @default(now())
+
+  application aid_application @relation(fields: [application_id], references: [id], onDelete: Cascade)
+
+  @@index([application_id])
+}
+
+model aid_validation_result {
+  id             String              @id @default(uuid())
+  application_id String
+  source         AidValidationSource
+  result         AidValidationResult
+  message        String
+  detail_json    String?
+  created_at     DateTime            @default(now())
+
+  application aid_application @relation(fields: [application_id], references: [id], onDelete: Cascade)
+
+  @@index([application_id, source])
+}
+
+model aid_verification {
+  id                        String           @id @default(uuid())
+  application_id            String
+  verifier_id               String
+  decision                  AidAdminDecision
+  notes                     String
+  field_verification_needed Boolean          @default(false)
+  verified_at               DateTime         @default(now())
+
+  application aid_application @relation(fields: [application_id], references: [id], onDelete: Cascade)
+  verifier    tbl_pengguna    @relation(fields: [verifier_id], references: [id])
+
+  @@index([application_id])
+  @@index([verifier_id])
+}
+
+model aid_distribution {
+  id                 String                         @id @default(uuid())
+  application_id     String
+  executed_by_id     String?
+  program            AidProgram
+  method             AidDistributionMethod
+  status             AidDistributionExecutionStatus @default(QUEUED)
+  nominal_bantuan    Decimal
+  external_reference String?
+  notes              String?
+  created_at         DateTime                       @default(now())
+  executed_at        DateTime?
+
+  application aid_application @relation(fields: [application_id], references: [id], onDelete: Cascade)
+  executed_by tbl_pengguna?  @relation(fields: [executed_by_id], references: [id])
+
+  @@index([application_id])
+  @@index([status])
+}
+
+model aid_application_transition {
+  id             String               @id @default(uuid())
+  application_id String
+  actor_id       String?
+  actor_type     AidActorType
+  from_status    AidApplicationStatus?
+  to_status      AidApplicationStatus
+  notes          String?
+  metadata_json  String?
+  created_at     DateTime             @default(now())
+
+  application aid_application @relation(fields: [application_id], references: [id], onDelete: Cascade)
+  actor       tbl_pengguna?   @relation(fields: [actor_id], references: [id])
+
+  @@index([application_id, created_at])
+}
+
+enum AidApplicationStatus {
+  SUBMITTED
+  VALIDATING
+  REJECTED_INVALID
+  PENDING_ADMIN_VERIFICATION
+  REJECTED_ADMIN
+  APPROVED
+  CENTRALIZED
+  PROGRAM_ASSIGNED
+  DISTRIBUTION_IN_PROGRESS
+  DISTRIBUTED
+}
+
+enum AidDocumentType {
+  KTP
+  KK
+  SURAT_KETERANGAN
+  FOTO_RUMAH
+  FOTO_PENDUKUNG
+  LAINNYA
+}
+
+enum AidValidationSource {
+  KEMENSOS_DECILE
+  ADMINISTRATIVE_RECORD
+}
+
+enum AidValidationResult {
+  PASSED
+  FAILED
+  ERROR
+}
+
+enum AidAdminDecision {
+  APPROVED
+  REJECTED
+}
+
+enum AidProgram {
+  PKH
+  BPNT
+  BLT
+}
+
+enum AidDistributionMethod {
+  BANK_TRANSFER
+  E_WALLET
+  PHYSICAL_DISTRIBUTION
+}
+
+enum AidDistributionExecutionStatus {
+  QUEUED
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+enum AidActorType {
+  CITIZEN
+  SYSTEM
+  ADMIN
+  SUPERVISOR
 }

@@ -1,7 +1,22 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  outputFileTracingRoot: process.cwd(),
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "utfs.io",
+      },
+      {
+        protocol: "https",
+        hostname: "*.ufs.sh",
+      },
+    ],
+  },
+  turbopack: {
+    root: process.cwd(),
+  },
 };
 
 export default nextConfig;

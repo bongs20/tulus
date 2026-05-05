@@ -6,6 +6,7 @@ import { UploadDropzone } from '@/lib/uploadthing';
 import { toast } from 'sonner';
 import { XCircle } from '@phosphor-icons/react';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 interface FormUploadFotoProps {
   initialData: { url_foto: string[] };
@@ -18,9 +19,16 @@ export function FormUploadFoto({ initialData, onNext, onBack, isLoading }: FormU
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>(initialData.url_foto || []);
   const maxFiles = 5;
 
-  const handleUploadComplete = (res: { fileUrl: string; uploadedBy: string }[]) => {
+  const handleUploadComplete = (res: Array<{ serverData?: { fileUrl?: string; uploadedBy?: string } }>) => {
+    console.log('handleUploadComplete', res);
     if (res && res.length > 0) {
-      const newUrls = res.map((r) => r.fileUrl);
+      const newUrls = res
+        .map((r) => r.serverData?.fileUrl)
+        .filter((url): url is string => Boolean(url));
+      if (newUrls.length === 0) {
+        console.warn('No fileUrl returned from server in upload response', res);
+        toast.warning('Unggahan selesai tapi URL file tidak diterima. Periksa console.');
+      }
       setUploadedImageUrls((prevUrls) => {
         const combined = [...prevUrls, ...newUrls];
         // Ensure maxFiles limit
@@ -37,6 +45,7 @@ export function FormUploadFoto({ initialData, onNext, onBack, isLoading }: FormU
   };
 
   const handleUploadError = (error: Error) => {
+    console.error('handleUploadError', error);
     toast.error(`Terjadi kesalahan saat mengunggah: ${error.message}`);
   };
 
@@ -54,9 +63,9 @@ export function FormUploadFoto({ initialData, onNext, onBack, isLoading }: FormU
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-lg border border-border bg-white p-4">
       <div>
-        <h3 className="text-lg font-medium">Upload Foto</h3>
+        <h3 className="text-lg font-semibold text-primary">Upload Foto</h3>
         <p className="text-sm text-muted-foreground">
           Unggah minimal 1, maksimal 5 foto. (JPG/PNG, max 4MB per foto)
         </p>
@@ -75,7 +84,7 @@ export function FormUploadFoto({ initialData, onNext, onBack, isLoading }: FormU
       {uploadedImageUrls.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
           {uploadedImageUrls.map((url, index) => (
-            <div key={index} className="relative aspect-video rounded-md overflow-hidden border">
+            <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border shadow-sm">
               <Image src={url} alt={`Uploaded ${index + 1}`} fill style={{ objectFit: 'cover' }} />
               <Button
                 type="button"
@@ -96,7 +105,7 @@ export function FormUploadFoto({ initialData, onNext, onBack, isLoading }: FormU
         <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>
           Kembali
         </Button>
-        <Button type="button" onClick={onSubmit} disabled={isLoading || uploadedImageUrls.length === 0}>
+        <Button type="button" className="bg-primary hover:bg-[#194fb2]" onClick={onSubmit} disabled={isLoading || uploadedImageUrls.length === 0}>
           Lanjutkan
         </Button>
       </div>

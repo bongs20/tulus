@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Validasi input gagal.', errors: error.errors }, { status: 400 });
+      return NextResponse.json({ message: 'Validasi input gagal.', errors: error.issues }, { status: 400 });
     }
     console.error('Error creating user:', error);
     return NextResponse.json({ message: 'Gagal membuat pengguna baru.' }, { status: 500 });

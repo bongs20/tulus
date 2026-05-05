@@ -7,8 +7,12 @@ import { writeAuditLog } from '@/lib/audit';
 import { sendSms } from '@/lib/sms';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 import { sanitize } from '@/lib/sanitizer';
+import { triggerPusherEvent } from '@/lib/pusher-server';
 
-const prisma = new PrismaClient();
+const getPrisma = () => new PrismaClient();
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // Placeholder for authOptions, will be defined in src/lib/auth.ts
 // For now, directly check session for role.
@@ -26,14 +30,14 @@ async function checkRole(req: NextRequest, allowedRoles: string[]) {
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
 
-  const { id } = params;
+  const { id } = await params;
   const { status, catatan } = await req.json();
   const sanitizedCatatan = sanitize(catatan);
 
@@ -44,12 +48,29 @@ export async function PUT(
   }
   const userId = authCheck.user?.id;
 
-  if (!Object.values(StatusVerifikasi).includes(status)) {
-    return NextResponse.json({ message: 'Status verifikasi tidak valid.' }, { status: 400 });
+  if (![StatusVerifikasi.DISETUJUI, StatusVerifikasi.DITOLAK].includes(status)) {
+    return NextResponse.json({ message: 'Status verifikasi harus DISETUJUI atau DITOLAK.' }, { status: 400 });
+  }
+
+  if (!sanitizedCatatan || !String(sanitizedCatatan).trim()) {
+    return NextResponse.json({ message: 'Catatan alasan verifikasi wajib diisi.' }, { status: 400 });
   }
 
   try {
-    const updatedPenerima = await prisma.tbl_penerima.update({
+    const currentPenerima = await getPrisma().tbl_penerima.findUnique({
+      where: { id },
+      select: { status_verifikasi: true },
+    });
+
+    if (!currentPenerima) {
+      return NextResponse.json({ message: 'Data penerima tidak ditemukan.' }, { status: 404 });
+    }
+
+    if (currentPenerima.status_verifikasi !== StatusVerifikasi.MATCH) {
+      return NextResponse.json({ message: 'Data belum lolos verifikasi awal (MATCH), tidak dapat diverifikasi faktual.' }, { status: 409 });
+    }
+
+    const updatedPenerima = await getPrisma().tbl_penerima.update({
       where: { id: id },
       data: {
         status_verifikasi: status,
@@ -80,7 +101,11 @@ export async function PUT(
     }
 
 
-    // TODO: Broadcast via Pusher channel "dashboard" event "verifikasi-update"
+    await triggerPusherEvent('dashboard-channel', 'verifikasi-update', {
+      penerimaId: updatedPenerima.id,
+      nama_lengkap: updatedPenerima.nama_lengkap,
+      status: updatedPenerima.status_verifikasi,
+    });
 
     return NextResponse.json(updatedPenerima, { status: 200 });
   } catch (error) {

@@ -1,22 +1,13 @@
 // src/app/api/penyaluran/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, JenisBantuan, MetodePenyaluran, StatusPenyaluran } from '@prisma/client';
+import { Prisma, PrismaClient, JenisBantuan, MetodePenyaluran, StatusPenyaluran, StatusVerifikasi } from '@prisma/client';
 import { writeAuditLog } from '@/lib/audit';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import Pusher from 'pusher';
 import { applyRateLimiter } from '@/lib/rate-limiter';
+import { triggerPusherEvent } from '@/lib/pusher-server';
 
 const prisma = new PrismaClient();
-
-// Initialize Pusher
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID || '',
-  key: process.env.PUSHER_KEY || '',
-  secret: process.env.PUSHER_SECRET || '',
-  cluster: process.env.PUSHER_CLUSTER || 'ap1',
-  useTLS: true,
-});
 
 async function checkRole(req: NextRequest, allowedRoles: string[]) {
   const session = await getServerSession(authOptions);
@@ -30,7 +21,7 @@ async function checkRole(req: NextRequest, allowedRoles: string[]) {
 }
 
 export async function POST(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -110,7 +101,12 @@ export async function POST(req: NextRequest) {
       });
 
       // Pusher broadcast for real-time update
-      pusher.trigger('penyaluran-channel', 'penyaluran-update', {
+      await triggerPusherEvent('penyaluran-channel', 'penyaluran-update', {
+        penyaluranId: updatedPenyaluran.id,
+        status: updatedPenyaluran.status_penyaluran,
+        catatan: updatedPenyaluran.catatan,
+      });
+      await triggerPusherEvent('dashboard-channel', 'penyaluran-update', {
         penyaluranId: updatedPenyaluran.id,
         status: updatedPenyaluran.status_penyaluran,
         catatan: updatedPenyaluran.catatan,
@@ -128,7 +124,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const rateLimitResponse = applyRateLimiter(req as any);
+  const rateLimitResponse = applyRateLimiter(req);
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -147,14 +143,13 @@ export async function GET(req: NextRequest) {
 
   const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const where: Prisma.tbl_penyaluranWhereInput = {};
   if (status) where.status_penyaluran = status;
   if (jenisBantuan) where.jenis_bantuan = jenisBantuan;
   if (search) {
     where.penerima = {
       OR: [
-        { nama_lengkap: { contains: search, mode: 'insensitive' } },
-        { nik: { contains: search, mode: 'insensitive' } },
+        { nama_lengkap: { contains: search } },
       ],
     };
   }

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#4e4ec9",
+                    "surface-container-high": "#e7e7f2",
+                    "on-tertiary-fixed-variant": "#7c2e00",
+                    "primary-container": "#1f63db",
+                    "surface-tint": "#0057cf",
+                    "tertiary": "#8e3600",
+                    "tertiary-container": "#b54700",
+                    "surface-variant": "#e1e2ec",
+                    "surface-container-highest": "#e1e2ec",
+                    "on-surface": "#191b23",
+                    "outline-variant": "#c3c6d6",
+                    "on-surface-variant": "#424654",
+                    "on-primary-fixed": "#001946",
+                    "tertiary-fixed": "#ffdbcd",
+                    "on-primary-fixed-variant": "#00419e",
+                    "on-secondary-fixed": "#0a006b",
+                    "outline": "#737785",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f2f3fd",
+                    "surface-bright": "#faf8ff",
+                    "inverse-surface": "#2e3038",
+                    "secondary-fixed": "#e2dfff",
+                    "on-tertiary-container": "#ffe6dc",
+                    "on-tertiary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#b1c5ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#191b23",
+                    "inverse-on-surface": "#f0f0fa",
+                    "primary": "#004bb5",
+                    "on-error-container": "#93000a",
+                    "on-primary-container": "#e6eaff",
+                    "error": "#ba1a1a",
+                    "primary-fixed": "#dae2ff",
+                    "secondary-fixed-dim": "#c1c1ff",
+                    "on-tertiary-fixed": "#351000",
+                    "background": "#faf8ff",
+                    "secondary-container": "#8283ff",
+                    "on-secondary-fixed-variant": "#3533b0",
+                    "on-secondary": "#ffffff",
+                    "surface": "#faf8ff",
+                    "tertiary-fixed-dim": "#ffb595",
+                    "on-secondary-container": "#120094",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d9d9e4",
+                    "inverse-primary": "#b1c5ff",
+                    "surface-container": "#ededf8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "margin": "24px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "xxl": "48px",
+                    "sm": "8px"
+            },
+            "fontFamily": {
+              "sans": ["'Public Sans'", "sans-serif"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "h4": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "h2": ["30px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                    "h3": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        body {
+            background-color: #f6f9ff;
+            font-family: 'Public Sans', sans-serif;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background">
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-[#f6f9ff] dark:bg-slate-950 border-b border-[#d7e3f7] dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white overflow-hidden">
+<img alt="TULUS Logo" class="w-full h-full object-cover" data-alt="A clean, minimalist government logo mark designed in a professional blue and white color scheme. The logo features abstract geometric shapes symbolizing unity and social welfare, positioned against a soft, high-key light mode background. The lighting is bright and corporate, reflecting institutional trust and reliability within a modern social services ecosystem." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjON_HlFYk6299HNLoZxCeCFSF3EF4eVO54PRg4H7RMZALNDlP8AZG-bIecSl5VgAjML2g76-hIE283L50SDMs9v5fZNBvFRUhbtz8MFRItYMMPOOEGNrWesmRDF04NPHODnrYDSdJHL84Z4IkOquMf4-Rdc39WXEJl27SWbfldDHEjkwnMHtFx6qdqbdWcrwlPD0AX7aXJorlbuZWKUlZKf18m-1R6C_9AvsuwD_zulYwOKgeEN-M0SJPf4BATt1GabASgadum04"/>
+</div>
+<span class="text-lg font-bold tracking-tighter text-[#1f63db] dark:text-blue-400">TULUS</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
+<img alt="Pengguna Tamu" class="w-full h-full object-cover" data-alt="A professional close-up portrait of a diverse woman representing a public citizen, shot with soft natural lighting in a bright, modern indoor environment. The image uses a clean, light-mode aesthetic with a shallow depth of field. Her expression is calm and helpful, embodying the trust and accessibility of a modern social services transparency portal." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJjdmF4jPuh3EMQyLsdmP4NsktFOzwrtEvoGRmbGEVOtyyKJ7QI154f6oXgqf6rKdEEsgYiRG3OOo6LbriPVCHiigIQgOBLUytK9o2HBv-9tWEy6CjB94mBYDIGpLb7mZu92fSefAtvq-FKUwlFfCymuN9f4hwlQxv9JUJ3_3ztRvpT6WHoEyBdua78u7faLcZ2McoVVf484SEFJ_C0vKwy3yDJoGcVmMJrIAk-C7gb6BOeZuLuwzvNVOcuZjBO4iqH_Bg4RhUPdI"/>
+</div>
+</div>
+</header>
+<main class="pt-20 pb-24 px-4 max-w-md mx-auto">
+<section class="mb-8">
+<h1 class="font-h1 text-h1 text-primary mb-2">Portal Transparansi</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Data penerima bantuan sosial terpadu Departemen Layanan Sosial.</p>
+</section>
+<section class="mb-6 bg-white border border-[#d7e3f7] rounded-xl p-4 shadow-[0_2px_10px_rgba(31,99,219,0.05)]">
+<div class="flex flex-col gap-4">
+<div>
+<label class="font-label-sm text-label-sm text-slate-500 mb-1 block">Cari Berdasarkan Nama atau NIK</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-3 rounded-lg border border-[#d7e3f7] focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md outline-none transition-all" placeholder="Masukkan NIK 16 digit..." type="text"/>
+</div>
+</div>
+<button class="w-full bg-[#1f63db] text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="manage_search">manage_search</span>
+                    Cek Status Penerima
+                </button>
+</div>
+</section>
+<section class="mb-8">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-h3 text-h3 text-on-surface">Penerima Disetujui</h3>
+<span class="font-label-sm text-label-sm bg-blue-50 text-primary px-2 py-1 rounded">Terbaru: Okt 2023</span>
+</div>
+<div class="space-y-3">
+<div class="bg-white border border-[#d7e3f7] rounded-xl p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-h4 text-h4 text-on-surface">Bambang S***</p>
+<p class="font-caption text-caption text-slate-500">NIK: 3275**********01</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-green-700 bg-green-50 px-2 py-1 rounded">PKH Aktif</span>
+</div>
+</div>
+<div class="bg-white border border-[#d7e3f7] rounded-xl p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-h4 text-h4 text-on-surface">Siti M***</p>
+<p class="font-caption text-caption text-slate-500">NIK: 3271**********05</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-green-700 bg-green-50 px-2 py-1 rounded">BPNT Aktif</span>
+</div>
+</div>
+<div class="bg-white border border-[#d7e3f7] rounded-xl p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<div>
+<p class="font-h4 text-h4 text-on-surface">Agus K***</p>
+<p class="font-caption text-caption text-slate-500">NIK: 3204**********12</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-green-700 bg-green-50 px-2 py-1 rounded">PBI-JK</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-4 py-2 text-primary font-semibold text-body-md border border-transparent hover:bg-blue-50 rounded-lg transition-colors">
+                Lihat Selengkapnya
+            </button>
+</section>
+<section class="mb-8">
+<div class="bg-primary-container text-white rounded-2xl p-6 relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="font-h3 text-h3 mb-2">Ajukan Sanggahan</h3>
+<p class="font-body-md text-body-md text-on-primary-container opacity-90 mb-4">Menemukan ketidaksesuaian data di lapangan? Laporkan untuk verifikasi ulang.</p>
+<button class="bg-white text-primary px-6 py-3 rounded-xl font-bold text-body-md flex items-center gap-2 shadow-lg">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+                        Ajukan Sekarang
+                    </button>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-20">
+<span class="material-symbols-outlined text-[120px]" data-icon="fact_check">fact_check</span>
+</div>
+</div>
+</section>
+<section class="text-center pb-8">
+<a class="inline-flex items-center gap-2 text-slate-500 hover:text-primary transition-colors font-body-md text-body-md" href="#"><span class="material-symbols-outlined text-[18px]" data-icon="admin_panel_settings">admin_panel_settings</span> Masuk Admin</a>
+<div class="mt-4 flex justify-center gap-4 text-slate-400 font-label-sm text-label-sm">
+<a href="#">Privasi</a>
+<a href="#">Bantuan</a>
+<a href="#">Hubungi Kami</a>
+</div>
+</section>
+</main>
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center bg-white dark:bg-slate-900 px-2 py-3 pb-safe border-t border-[#d7e3f7] dark:border-slate-800 shadow-[0_-2px_10px_rgba(31,99,219,0.05)]">
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-2 py-1">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Beranda</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-2 py-1">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Verifikasi</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-2 py-1">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Daftar</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-2 py-1">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Penyaluran</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#1f63db] dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-xl px-2 py-1">
+<span class="material-symbols-outlined" data-icon="public" style="font-variation-settings: 'FILL' 1;">public</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Portal</span>
+</div>
+</nav>
+</body></html>

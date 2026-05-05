@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>TULUS Executive Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#4e4ec9",
+                    "surface-container-high": "#e7e7f2",
+                    "on-tertiary-fixed-variant": "#7c2e00",
+                    "primary-container": "#1f63db",
+                    "surface-tint": "#0057cf",
+                    "tertiary": "#8e3600",
+                    "tertiary-container": "#b54700",
+                    "surface-variant": "#e1e2ec",
+                    "surface-container-highest": "#e1e2ec",
+                    "on-surface": "#191b23",
+                    "outline-variant": "#c3c6d6",
+                    "on-surface-variant": "#424654",
+                    "on-primary-fixed": "#001946",
+                    "tertiary-fixed": "#ffdbcd",
+                    "on-primary-fixed-variant": "#00419e",
+                    "on-secondary-fixed": "#0a006b",
+                    "outline": "#737785",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f2f3fd",
+                    "surface-bright": "#faf8ff",
+                    "inverse-surface": "#2e3038",
+                    "secondary-fixed": "#e2dfff",
+                    "on-tertiary-container": "#ffe6dc",
+                    "on-tertiary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#b1c5ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#191b23",
+                    "inverse-on-surface": "#f0f0fa",
+                    "primary": "#004bb5",
+                    "on-error-container": "#93000a",
+                    "on-primary-container": "#e6eaff",
+                    "error": "#ba1a1a",
+                    "primary-fixed": "#dae2ff",
+                    "secondary-fixed-dim": "#c1c1ff",
+                    "on-tertiary-fixed": "#351000",
+                    "background": "#faf8ff",
+                    "secondary-container": "#8283ff",
+                    "on-secondary-fixed-variant": "#3533b0",
+                    "on-secondary": "#ffffff",
+                    "surface": "#faf8ff",
+                    "tertiary-fixed-dim": "#ffb595",
+                    "on-secondary-container": "#120094",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d9d9e4",
+                    "inverse-primary": "#b1c5ff",
+                    "surface-container": "#ededf8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "margin": "24px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "xxl": "48px",
+                    "sm": "8px"
+            },
+            "fontFamily": {
+                "sans": ["'Public Sans'", "sans-serif"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "h4": ["18px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "h2": ["30px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                    "h3": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; background-color: #f6f9ff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="text-on-background pb-24">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-[#f6f9ff] border-b border-[#d7e3f7] transition-colors duration-200 ease-in-out">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a middle-aged field officer for a social services agency. He is smiling warmly against a soft-focus office background with blue tones. The lighting is bright and clear, emphasizing a sense of trust and institutional reliability consistent with a modern corporate identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz0JKi26J_cqf_3aM1-Ow7v4I7o8aw7v1CQNGUdYk4i7xRGJQWmhIW5NH2OWA03CLiOqnxqjefWmj4aLTLd6gBJi0A7rY8RuD29jFxEgQVFNXFTgM0uGUPZIkSXBgstboXhCE4alkcBWs06X0OxWlRIN68At98DzE2VWrGODdwXsrqiCSr0kyVg5CaM430iyixiQYz5vaSAGE93wa7KN-Qhg1FrF8bZDiTG-XpgXKhmFAUOowpXq1adCwyW08l1hxAgFNh8SyHDng"/>
+</div>
+<span class="text-lg font-bold tracking-tighter text-[#1f63db]">TULUS</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-xl text-slate-600 hover:bg-blue-50 transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-20 px-4 space-y-6">
+<!-- Welcome & Sync Action -->
+<section class="flex items-center justify-between">
+<div class="space-y-1">
+<h1 class="text-h3 font-h3 text-on-surface">Ringkasan Eksekutif</h1>
+<p class="text-caption font-caption text-on-surface-variant">Terakhir diperbarui: 2 menit yang lalu</p>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary-container text-on-primary rounded-lg shadow-sm active:scale-95 transition-all text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="sync">sync</span>
+<span>Sinkron Ulang</span>
+</button>
+</section>
+<!-- KPI Bento Grid -->
+<section class="grid grid-cols-2 gap-3">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest border border-[#d7e3f7] p-4 rounded-xl flex flex-col justify-between space-y-4">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-[#1f63db]" data-icon="groups">groups</span>
+<span class="text-[10px] px-2 py-0.5 bg-green-50 text-green-700 rounded-full font-bold">+12%</span>
+</div>
+<div>
+<p class="text-caption font-caption text-on-surface-variant">Dalam Proses</p>
+<p class="text-h4 font-h4 text-on-surface">12,482</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest border border-[#d7e3f7] p-4 rounded-xl flex flex-col justify-between space-y-4">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-secondary" data-icon="pending_actions">pending_actions</span>
+<span class="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-bold">Aktif</span>
+</div>
+<div>
+<p class="text-caption font-caption text-on-surface-variant">Dalam Proses</p>
+<p class="text-h4 font-h4 text-on-surface">3,105</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-[#d7e3f7] p-4 rounded-xl flex flex-col justify-between space-y-4">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-green-600" data-icon="verified">verified</span>
+<span class="text-[10px] px-2 py-0.5 bg-green-50 text-green-700 rounded-full font-bold">842 Baru</span>
+</div>
+<div>
+<p class="text-caption font-caption text-on-surface-variant">Disetujui Bulan Ini</p>
+<p class="text-h4 font-h4 text-on-surface">2,840</p>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest border border-[#d7e3f7] p-4 rounded-xl flex flex-col justify-between space-y-4">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-tertiary" data-icon="trending_up">trending_up</span>
+<span class="text-[10px] px-2 py-0.5 bg-orange-50 text-tertiary rounded-full font-bold">Stabil</span>
+</div>
+<div>
+<p class="text-caption font-caption text-on-surface-variant">Tingkat Keberhasilan</p>
+<p class="text-h4 font-h4 text-on-surface">94.2%</p>
+</div>
+</div>
+</section>
+<!-- Funnel Section -->
+<section class="bg-surface-container-lowest border border-[#d7e3f7] rounded-xl p-4 shadow-sm">
+<h2 class="text-body-lg font-h4 mb-4">Corong Pemrosesan Bantuan</h2>
+<div class="space-y-3">
+<!-- Funnel Step 1 -->
+<div class="relative">
+<div class="flex items-center justify-between mb-1">
+<span class="text-label-sm font-label-sm">Penerimaan &amp; Verifikasi</span>
+<span class="text-caption font-caption text-slate-500">100%</span>
+</div>
+<div class="w-full h-8 bg-blue-50 rounded-lg overflow-hidden">
+<div class="h-full bg-primary-container w-full opacity-100 flex items-center px-3">
+<span class="text-[10px] text-white font-bold">12.482 Permohonan</span>
+</div>
+</div>
+</div>
+<!-- Funnel Step 2 -->
+<div class="relative pl-4">
+<div class="flex items-center justify-between mb-1">
+<span class="text-label-sm font-label-sm">Penyaringan Kelayakan</span>
+<span class="text-caption font-caption text-slate-500">72%</span>
+</div>
+<div class="w-full h-8 bg-blue-50 rounded-lg overflow-hidden">
+<div class="h-full bg-primary-container/80 w-[72%] flex items-center px-3">
+<span class="text-[10px] text-white font-bold">8.987 Terverifikasi</span>
+</div>
+</div>
+</div>
+<!-- Funnel Step 3 -->
+<div class="relative pl-8">
+<div class="flex items-center justify-between mb-1">
+<span class="text-label-sm font-label-sm">Persetujuan Akhir</span>
+<span class="text-caption font-caption text-slate-500">45%</span>
+</div>
+<div class="w-full h-8 bg-blue-50 rounded-lg overflow-hidden">
+<div class="h-full bg-primary-container/60 w-[45%] flex items-center px-3">
+<span class="text-[10px] text-white font-bold">5.616 Disetujui</span>
+</div>
+</div>
+</div>
+<!-- Funnel Step 4 -->
+<div class="relative pl-12">
+<div class="flex items-center justify-between mb-1">
+<span class="text-label-sm font-label-sm">Distribusi</span>
+<span class="text-caption font-caption text-slate-500">32%</span>
+</div>
+<div class="w-full h-8 bg-blue-50 rounded-lg overflow-hidden">
+<div class="h-full bg-primary-container/40 w-[32%] flex items-center px-3">
+<span class="text-[10px] text-white font-bold">3.994 Selesai</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Distributions -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-body-lg font-h4">Distribusi Terbaru</h2>
+<button class="text-label-sm font-label-sm text-[#1f63db]">View All</button>
+</div>
+<div class="space-y-3">
+<!-- List Item 1 -->
+<div class="bg-surface-container-lowest border border-[#d7e3f7] rounded-xl p-3 flex items-center gap-3">
+<div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-[#1f63db]" data-icon="local_shipping">local_shipping</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-body-md font-semibold text-on-surface truncate">Pasokan Medis - Sektor A</p>
+<p class="text-caption font-caption text-on-surface-variant">240 unit</p>
+</div>
+<div class="text-right">
+<p class="text-label-sm font-bold text-green-600">Terkirim</p>
+<p class="text-caption font-caption text-on-surface-variant">240 unit</p>
+</div>
+</div>
+<!-- List Item 2 -->
+<div class="bg-surface-container-lowest border border-[#d7e3f7] rounded-xl p-3 flex items-center gap-3">
+<div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="inventory">inventory</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-body-md font-semibold text-on-surface truncate">Perlengkapan Edukasi - Distrik Utara</p>
+<p class="text-caption font-caption text-on-surface-variant">1.200 unit</p>
+</div>
+<div class="text-right">
+<p class="text-label-sm font-bold text-secondary">Dalam Perjalanan</p>
+<p class="text-caption font-caption text-on-surface-variant">1.200 unit</p>
+</div>
+</div>
+<!-- List Item 3 -->
+<div class="bg-surface-container-lowest border border-[#d7e3f7] rounded-xl p-3 flex items-center gap-3">
+<div class="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" data-icon="restaurant">restaurant</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-body-md font-semibold text-on-surface truncate">Paket Ketahanan Pangan - Wilayah 4</p>
+<p class="text-caption font-caption text-on-surface-variant">850 paket</p>
+</div>
+<div class="text-right">
+<p class="text-label-sm font-bold text-green-600">Selesai</p>
+<p class="text-caption font-caption text-on-surface-variant">850 paket</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center bg-white border-t border-[#d7e3f7] px-2 py-3 pb-safe shadow-[0_-2px_10px_rgba(31,99,219,0.05)]">
+<a class="flex flex-col items-center justify-center text-[#1f63db] bg-blue-50 rounded-xl px-2 py-1 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Beranda</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-2 py-1 hover:text-[#1f63db] active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Verifikasi</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-2 py-1 hover:text-[#1f63db] active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Daftar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-2 py-1 hover:text-[#1f63db] active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Distribusi</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 px-2 py-1 hover:text-[#1f63db] active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="public">public</span>
+<span class="font-['Public_Sans'] text-[10px] font-medium">Portal</span>
+</a>
+</nav>
+</body></html>

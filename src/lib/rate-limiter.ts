@@ -1,5 +1,5 @@
 // src/lib/rate-limiter.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 type RateLimitStore = {
   [ip: string]: {
@@ -12,8 +12,9 @@ const rateLimitStore: RateLimitStore = {};
 const rateLimit = 100; // 100 requests
 const rateLimitWindow = 60 * 1000; // 1 minute in ms
 
-export function applyRateLimiter(req: NextResponse) {
-  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
+export function applyRateLimiter(req: NextRequest) {
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const ip = forwardedFor?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '127.0.0.1';
 
   const now = Date.now();
   const userRequests = rateLimitStore[ip] || { count: 0, lastRequest: now };
