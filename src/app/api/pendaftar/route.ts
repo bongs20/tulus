@@ -1,24 +1,22 @@
+// src/app/api/pendaftar/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
-import { decrypt, encrypt } from '@/lib/crypto';
+import { encrypt } from '@/lib/crypto';
 import { applyRateLimiter } from '@/lib/rate-limiter';
 import { ekonomiSchema, identitasSchema } from '@/lib/validators';
 
 const prisma = new PrismaClient();
 const WHATSAPP_ADMIN = '085157441531';
 
-// We keep the GET handler as-is for the initial NIK check.
 export async function GET(req: NextRequest) {
   const rateLimitResponse = applyRateLimiter(req as any);
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
+  if (rateLimitResponse) return rateLimitResponse;
 
   const { searchParams } = new URL(req.url);
   const nik = searchParams.get('nik')?.trim();
 
-  if (!nik || nik.length < 6 || nik.length > 16 || !/^\d+$/.test(nik)) {
+  if (!nik || nik.length !== 16 || !/^\d+$/.test(nik)) {
     return NextResponse.json({ message: 'NIK tidak valid.' }, { status: 400 });
   }
 
@@ -32,12 +30,7 @@ export async function GET(req: NextRequest) {
     if (existingPenerima) {
       const warga = await prisma.tbl_warga.findFirst({
         where: { nik: encryptedNik },
-        select: {
-          nama_lengkap: true,
-          wilayah: true,
-          status_dtks: true,
-          nilai_kesejahteraan: true,
-        },
+        select: { nama_lengkap: true, wilayah: true, status_dtks: true, nilai_kesejahteraan: true },
       });
 
       return NextResponse.json({
@@ -50,19 +43,12 @@ export async function GET(req: NextRequest) {
         status_dtks: warga?.status_dtks,
         nilai_kesejahteraan: warga?.nilai_kesejahteraan,
         contactWhatsapp: WHATSAPP_ADMIN,
-        message: 'NIK ini sudah terdaftar di sistem. Silakan cek status di portal publik atau tunggu proses berikutnya.',
-      }, { status: 200 });
+        message: 'NIK ini sudah terdaftar di sistem.',
+      });
     }
 
     const warga = await prisma.tbl_warga.findFirst({
       where: { nik: encryptedNik },
-      select: {
-        nama_lengkap: true,
-        wilayah: true,
-        status_dtks: true,
-        nilai_kesejahteraan: true,
-        is_dalam_jangkauan: true,
-      },
     });
 
     if (!warga) {
@@ -72,46 +58,30 @@ export async function GET(req: NextRequest) {
         status: 'HUBUNGI_ADMIN',
         nik,
         contactWhatsapp: WHATSAPP_ADMIN,
-        message: `Data tidak ditemukan atau bukan warga sini. Silakan hubungi admin via WhatsApp ${WHATSAPP_ADMIN}.`,
-      }, { status: 200 });
+        message: `Data NIK tidak ditemukan di database Master Warga kami.`,
+      });
     }
 
-    const canRegister = warga.is_dalam_jangkauan && warga.status_dtks !== 'LUAR_JANGKAUAN' && warga.status_dtks !== 'DATA_TIDAK_ADA';
+    const canRegister = warga.is_dalam_jangkauan && warga.status_dtks !== 'LUAR_JANGKAUAN';
 
-    return NextResponse.json(canRegister
-      ? {
-          canRegister: true,
-          isRegistered: false,
-          status: 'BISA_DAFTAR',
-          nik,
-          nama_lengkap: warga.nama_lengkap,
-          wilayah: warga.wilayah,
-          status_dtks: warga.status_dtks,
-          nilai_kesejahteraan: warga.nilai_kesejahteraan,
-          contactWhatsapp: WHATSAPP_ADMIN,
-          message: 'Warga terdeteksi di wilayah layanan. Silakan lanjutkan mengisi formulir pendaftaran.',
-        }
-      : {
-          canRegister: false,
-          isRegistered: false,
-          status: 'HUBUNGI_ADMIN',
-          nik,
-          nama_lengkap: warga.nama_lengkap,
-          wilayah: warga.wilayah,
-          status_dtks: warga.status_dtks,
-          nilai_kesejahteraan: warga.nilai_kesejahteraan,
-          contactWhatsapp: WHATSAPP_ADMIN,
-          message: warga.status_dtks === 'LUAR_JANGKAUAN'
-              ? `Wilayah Anda di luar jangkauan layanan. Silakan hubungi admin via WhatsApp ${WHATSAPP_ADMIN}.`
-              : `Data Anda belum lengkap di sistem. Silakan hubungi admin via WhatsApp ${WHATSAPP_ADMIN}.`,
-        }, { status: 200 });
+    return NextResponse.json({
+      canRegister,
+      isRegistered: false,
+      status: canRegister ? 'BISA_DAFTAR' : 'HUBUNGI_ADMIN',
+      nik,
+      nama_lengkap: warga.nama_lengkap,
+      wilayah: warga.wilayah,
+      status_dtks: warga.status_dtks,
+      nilai_kesejahteraan: warga.nilai_kesejahteraan,
+      contactWhatsapp: WHATSAPP_ADMIN,
+      message: canRegister ? 'Warga ditemukan. Silakan lanjutkan pendaftaran.' : 'Data Anda belum memenuhi syarat pendaftaran mandiri.',
+    });
 
   } catch (error) {
-    console.error('Error checking pendaftar eligibility:', error);
-    return NextResponse.json({ message: 'Terjadi kesalahan pada server.' }, { status: 500 });
+    console.error('Error checking eligibility:', error);
+    return NextResponse.json({ message: 'Kesalahan server.' }, { status: 500 });
   }
 }
-
 
 const registrationSchema = identitasSchema.merge(ekonomiSchema).extend({
   url_foto: z.array(z.string()).optional(),
@@ -119,146 +89,89 @@ const registrationSchema = identitasSchema.merge(ekonomiSchema).extend({
 
 export async function POST(req: NextRequest) {
   const rateLimitResponse = applyRateLimiter(req as any);
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
-
-  const body = await req.json();
-  const validation = registrationSchema.safeParse(body);
-
-  if (!validation.success) {
-    return NextResponse.json({ message: 'Data yang dikirim tidak valid.', issues: validation.error.issues }, { status: 400 });
-  }
-
-  const { nik, url_foto, ...penerimaData } = validation.data;
+  if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    const encryptedNik = encrypt(nik);
-    
-    // Gunakan pencarian manual untuk reliabilitas pada SQLite Bytes column
-    const allWarga = await prisma.tbl_warga.findMany();
-    const warga = allWarga.find(w => {
-      try {
-        return decrypt(w.nik) === nik;
-      } catch {
-        return false;
-      }
-    });
-
-    if (!warga || !warga.is_dalam_jangkauan || warga.status_dtks === 'LUAR_JANGKAUAN' || warga.status_dtks === 'DATA_TIDAK_ADA') {
-      return NextResponse.json({ message: 'Warga tidak memenuhi syarat untuk mendaftar.' }, { status: 403 });
+    const body = await req.json();
+    const validation = registrationSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ message: 'Data tidak valid.', issues: validation.error.issues }, { status: 400 });
     }
-    
-    const allPenerima = await prisma.tbl_penerima.findMany();
-    const alreadyRegistered = allPenerima.find(p => {
-      try {
-        return decrypt(p.nik) === nik;
-      } catch {
-        return false;
-      }
-    });
 
+    const { nik, url_foto, ...penerimaData } = validation.data;
+    const encryptedNik = encrypt(nik);
+
+    // Direct check in database
+    const warga = await prisma.tbl_warga.findFirst({ where: { nik: encryptedNik } });
+    if (!warga || !warga.is_dalam_jangkauan) {
+      return NextResponse.json({ message: 'Warga tidak memenuhi syarat.' }, { status: 403 });
+    }
+
+    const alreadyRegistered = await prisma.tbl_penerima.findFirst({ where: { nik: encryptedNik } });
     if (alreadyRegistered) {
       return NextResponse.json({ message: 'NIK ini sudah terdaftar.' }, { status: 409 });
     }
-    // --- End Security Re-validation ---
 
-    // Attempt direct DTKS Sync
+    // DTKS Sync
     const { mockDtksSync } = await import('@/lib/dtks');
-    let dtksResult: Awaited<ReturnType<typeof mockDtksSync>> | null = null;
+    let dtksResult = null;
     try {
-      dtksResult = await mockDtksSync({ 
-        nik, 
-        nama: penerimaData.nama_lengkap, 
-        tanggal_lahir: new Date(penerimaData.tanggal_lahir) 
-      });
-    } catch (e) {
-      console.warn('Initial DTKS sync failed, marking as TERTUNDA');
-    }
+      dtksResult = await mockDtksSync({ nik, nama: penerimaData.nama_lengkap, tanggal_lahir: new Date(penerimaData.tanggal_lahir) });
+    } catch (e) { console.warn('Sync failed'); }
 
     const isSyncFailed = !dtksResult;
-    const mappedStatusVerifikasi = isSyncFailed
-      ? 'MENUNGGU'
-      : dtksResult?.status === 'MATCH'
-        ? 'MATCH'
-        : 'MISMATCH';
-
-    const mappedStatusSinkronisasi = isSyncFailed
-      ? 'TERTUNDA'
-      : dtksResult?.status === 'MATCH'
-        ? 'MATCH'
-        : 'MISMATCH';
+    const statusVerifikasi = isSyncFailed ? 'MENUNGGU' : dtksResult.status === 'MATCH' ? 'MATCH' : 'MISMATCH';
 
     const newPenerima = await prisma.$transaction(async (tx) => {
-      const penerima = await tx.tbl_penerima.create({
+      const p = await tx.tbl_penerima.create({
         data: {
           ...penerimaData,
           nik: encryptedNik,
-          keterangan_ekonomi: penerimaData.keterangan_ekonomi ?? `Registrasi mandiri. Nilai Kesejahteraan Awal: ${warga.nilai_kesejahteraan}`,
-          status_verifikasi: mappedStatusVerifikasi,
+          status_verifikasi: statusVerifikasi,
         },
       });
 
       if (url_foto && url_foto.length > 0) {
         await tx.tbl_foto.createMany({
-          data: url_foto.map((url) => ({
-            id_penerima: penerima.id,
+          data: url_foto.map(url => ({
+            id_penerima: p.id,
             url_foto: encrypt(url),
-            nama_file: url.substring(url.lastIndexOf('/') + 1) || 'uploaded_file',
+            nama_file: 'pendaftaran_mandiri',
           })),
         });
       }
 
       await tx.tbl_desil.create({
         data: {
-          id_penerima: penerima.id,
+          id_penerima: p.id,
           nik: encryptedNik,
           nilai_desil: dtksResult?.desil ?? warga.nilai_kesejahteraan,
           sumber_data: 'PENDAFTARAN MANDIRI',
-          status_sinkronisasi: mappedStatusSinkronisasi,
+          status_sinkronisasi: isSyncFailed ? 'TERTUNDA' : dtksResult.status === 'MATCH' ? 'MATCH' : 'MISMATCH',
           tanggal_sinkronisasi: new Date(),
         },
       });
 
-      return penerima;
+      return p;
     });
 
-    // Send Notifications
+    // Notifications
     const { sendTelegramNotification } = await import('@/lib/telegram');
     const { sendWhatsappNotification } = await import('@/lib/fonnte');
     
-    if (!isSyncFailed) {
-      let statusMsg = '';
-      if (dtksResult?.status === 'MATCH') {
-        statusMsg = 'Verifikasi awal berhasil. Data Anda masuk ke antrian verifikasi faktual TULUS.';
-      } else if (dtksResult?.status === 'MISMATCH') {
-        statusMsg = 'Mohon maaf, sinkronisasi awal gagal (MISMATCH). Data Anda tidak sesuai dengan DTKS. Silakan ajukan sanggahan melalui portal publik TULUS.';
-      }
-      
-      // 1. Kirim WhatsApp ke Warga via Fonnte
-      if (statusMsg && newPenerima.nomor_telepon && newPenerima.nomor_telepon !== '0') {
-        await sendWhatsappNotification(newPenerima.nomor_telepon, statusMsg);
-      }
-
-      // 2. Kirim Notifikasi ke Admin via Telegram (Monitoring)
-      const adminMsg = `🆕 *PENDAFTAR BARU*\nNama: ${newPenerima.nama_lengkap}\nNIK: ${nik}\nStatus: ${dtksResult?.status}\nWilayah: ${newPenerima.alamat}`;
-      await sendTelegramNotification(adminMsg);
-
-      // 3. Kirim WhatsApp ke Admin (Backup Monitoring)
-      const adminPhone = process.env.ADMIN_PHONE || "085157441531";
-      await sendWhatsappNotification(adminPhone, `[ADMIN TULUS] Ada pendaftar baru:\nNama: ${newPenerima.nama_lengkap}\nStatus: ${dtksResult?.status}\nCek segera di dashboard.`);
+    const statusMsg = statusVerifikasi === 'MATCH' 
+      ? 'Verifikasi awal berhasil. Data Anda masuk ke antrian verifikasi.' 
+      : 'Sinkronisasi DTKS gagal. Silakan ajukan sanggahan jika data Anda benar.';
+    
+    if (newPenerima.nomor_telepon) {
+      await sendWhatsappNotification(newPenerima.nomor_telepon, statusMsg);
     }
+    await sendTelegramNotification(`🆕 Pendaftar Baru: ${newPenerima.nama_lengkap} (${nik})`);
 
-    return NextResponse.json({
-      message: 'Pendaftaran mandiri berhasil. Data Anda sudah tercatat dan menunggu evaluasi petugas.',
-      penerimaId: newPenerima.id,
-    }, { status: 201 });
+    return NextResponse.json({ message: 'Pendaftaran berhasil.', id: newPenerima.id }, { status: 201 });
 
   } catch (error) {
-    console.error('Error registering pendaftar:', error);
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Data tidak valid', issues: error.issues }, { status: 400 });
-    }
-    return NextResponse.json({ message: 'Terjadi kesalahan pada server saat pendaftaran.' }, { status: 500 });
+    console.error('Error:', error);
+    return NextResponse.json({ message: 'Kesalahan server.' }, { status: 500 });
   }
 }
